@@ -54,6 +54,8 @@ export const TYPE_ICONS: Record<string, string> = {
 	avi: "file-video",
 	pdf: "file-text",
 	canvas: "layout-dashboard",
+	excalidraw: "pencil-ruler",
+	"excalidraw.md": "pencil-ruler",
 	base: "layout-list",
 	js: "file-code",
 	ts: "file-code",

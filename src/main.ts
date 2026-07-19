@@ -234,12 +234,15 @@ export default class AutoIconsPlugin extends Plugin {
 		}
 
 		if (this.settings.typeIconsEnabled) {
-			const name = path.split("/").pop() ?? path;
-			const dotIndex = name.lastIndexOf(".");
-			if (dotIndex > 0) {
-				const icon = TYPE_ICONS[name.slice(dotIndex + 1).toLowerCase()];
-				if (icon) {
-					return icon;
+			const name = (path.split("/").pop() ?? path).toLowerCase();
+			const parts = name.split(".");
+			if (parts.length > 1 && parts[0] !== "") {
+				// Longest compound extension wins, e.g. "excalidraw.md" over "md".
+				for (let i = 1; i < parts.length; i++) {
+					const icon = TYPE_ICONS[parts.slice(i).join(".")];
+					if (icon) {
+						return icon;
+					}
 				}
 			}
 		}
