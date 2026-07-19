@@ -15,7 +15,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: AutoIconsPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.icon = "lucide-shapes";
+		this.icon = "lucide-wand-sparkles";
 	}
 
 	async setControlValue(key: string, value: unknown): Promise<void> {
