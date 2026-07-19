@@ -51,9 +51,7 @@ export default class AutoIconsPlugin extends Plugin {
 				const file = this.app.workspace.getActiveFile();
 				const property = this.settings.frontmatterProperty;
 				const frontmatter = file
-					? (this.app.metadataCache.getFileCache(file)?.frontmatter as
-							| Record<string, unknown>
-							| undefined)
+					? this.app.metadataCache.getFileCache(file)?.frontmatter
 					: undefined;
 				if (!file || frontmatter?.[property] === undefined) {
 					return false;
@@ -209,10 +207,8 @@ export default class AutoIconsPlugin extends Plugin {
 	/** Priority: frontmatter property, then custom rules in order, then file type. */
 	resolveIcon(path: string, isFolder: boolean): string | null {
 		if (!isFolder && this.settings.frontmatterEnabled) {
-			const frontmatter = this.app.metadataCache.getCache(path)?.frontmatter as
-				| Record<string, unknown>
-				| undefined;
-			const value = frontmatter?.[this.settings.frontmatterProperty];
+			const frontmatter = this.app.metadataCache.getCache(path)?.frontmatter;
+			const value: unknown = frontmatter?.[this.settings.frontmatterProperty];
 			if (typeof value === "string" && this.isKnownIcon(value.trim())) {
 				return value.trim();
 			}
