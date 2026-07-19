@@ -1,0 +1,34 @@
+/* Icon injected before file and folder names in the file explorer */
+.autoicons-icon {
+	display: inline-flex;
+	align-items: center;
+	margin-inline-end: var(--size-2-2);
+	vertical-align: middle;
+	color: var(--icon-color);
+}
+
+.autoicons-icon svg {
+	width: var(--icon-s);
+	height: var(--icon-s);
+}
+
+/* Icon preview inside the fuzzy search suggestions */
+.autoicons-suggestion {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.autoicons-suggestion-icon {
+	display: inline-flex;
+	align-items: center;
+	color: var(--icon-color);
+}
+
+/* Icon preview next to a rule in settings */
+.autoicons-rule-preview {
+	display: inline-flex;
+	align-items: center;
+	margin-inline-start: var(--size-4-2);
+	color: var(--icon-color);
+}
