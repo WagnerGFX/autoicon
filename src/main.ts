@@ -32,9 +32,12 @@ export default class AutoIconsPlugin extends Plugin {
 				}
 				if (!checking) {
 					new IconPickerModal(this.app, (icon) => {
-						this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-							frontmatter[this.settings.frontmatterProperty] = icon;
-						});
+						void this.app.fileManager.processFrontMatter(
+							file,
+							(frontmatter: Record<string, unknown>) => {
+								frontmatter[this.settings.frontmatterProperty] = icon;
+							}
+						);
 					}).open();
 				}
 				return true;
@@ -47,17 +50,21 @@ export default class AutoIconsPlugin extends Plugin {
 			checkCallback: (checking) => {
 				const file = this.app.workspace.getActiveFile();
 				const property = this.settings.frontmatterProperty;
-				const hasIcon =
-					file !== null &&
-					this.app.metadataCache.getFileCache(file)?.frontmatter?.[property] !==
-						undefined;
-				if (!file || !hasIcon) {
+				const frontmatter = file
+					? (this.app.metadataCache.getFileCache(file)?.frontmatter as
+							| Record<string, unknown>
+							| undefined)
+					: undefined;
+				if (!file || frontmatter?.[property] === undefined) {
 					return false;
 				}
 				if (!checking) {
-					this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-						delete frontmatter[property];
-					});
+					void this.app.fileManager.processFrontMatter(
+						file,
+						(fm: Record<string, unknown>) => {
+							delete fm[property];
+						}
+					);
 				}
 				return true;
 			},
@@ -100,7 +107,8 @@ export default class AutoIconsPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = (await this.loadData()) as Partial<AutoIconsSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 	}
 
 	async saveSettings() {
@@ -150,7 +158,7 @@ export default class AutoIconsPlugin extends Plugin {
 		];
 		return nodes.some(
 			(node) =>
-				node instanceof HTMLElement &&
+				node.instanceOf(HTMLElement) &&
 				!node.matches(`.${ICON_CLASS}, .${ICON_CLASS} *`)
 		);
 	}
@@ -201,7 +209,9 @@ export default class AutoIconsPlugin extends Plugin {
 	/** Priority: frontmatter property, then custom rules in order, then file type. */
 	resolveIcon(path: string, isFolder: boolean): string | null {
 		if (!isFolder && this.settings.frontmatterEnabled) {
-			const frontmatter = this.app.metadataCache.getCache(path)?.frontmatter;
+			const frontmatter = this.app.metadataCache.getCache(path)?.frontmatter as
+				| Record<string, unknown>
+				| undefined;
 			const value = frontmatter?.[this.settings.frontmatterProperty];
 			if (typeof value === "string" && this.isKnownIcon(value.trim())) {
 				return value.trim();

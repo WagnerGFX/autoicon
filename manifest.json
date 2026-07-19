@@ -2,7 +2,7 @@
 	"id": "autoicons",
 	"name": "AutoIcons",
 	"version": "1.0.0",
-	"minAppVersion": "1.5.0",
+	"minAppVersion": "1.13.0",
 	"description": "Automatically adds icons to files and folders based on frontmatter, custom rules, and file type.",
 	"author": "Anuz Dhakal",
 	"isDesktopOnly": false
