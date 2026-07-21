@@ -1,6 +1,6 @@
 {
 	"name": "autoicons",
-	"version": "1.2.2",
+	"version": "1.2.3",
 	"description": "Automatically adds icons to files and folders in Obsidian based on frontmatter, custom rules, and file type.",
 	"main": "main.js",
 	"scripts": {
