@@ -26,9 +26,9 @@ Icons are resolved for each file and folder in this priority order:
 
 3. **Default icons by file type** — images, audio, video, PDF, canvas, code, archives, and spreadsheets get a sensible icon out of the box. Can be turned off.
 
-All icons come from the icon set built into Obsidian ([Lucide](https://lucide.dev)), so they automatically match your theme in both light and dark mode.
+All icons come from the icon set built into Obsidian ([Lucide](https://lucide.dev)) by default, so they automatically match your theme in both light and dark mode.
 
-### Icon packs
+### Icon packs & icon style
 
 Beyond Lucide, every icon picker (frontmatter, rules, default folder/note icon) can also search four bundled icon sets:
 
@@ -37,7 +37,9 @@ Beyond Lucide, every icon picker (frontmatter, rules, default folder/note icon) 
 - [Cuida Icons](https://icon-sets.iconify.design/cuida/) by Sysvale
 - [Material Symbols (Outlined)](https://icon-sets.iconify.design/material-symbols/) by Google
 
-All four are bundled into the plugin at build time — nothing is downloaded at runtime, and the plugin makes no network requests. Each pack can be shown or hidden in the icon picker independently under **Settings → Icon packs**; hiding a pack only affects the picker, icons already assigned from it keep working.
+All four are bundled into the plugin at build time — nothing is downloaded at runtime, and the plugin makes no network requests.
+
+Pick one under **Settings → Icon style** to re-skin every automatic icon at once — all the per-extension file-type icons plus the default folder and note icons switch to that pack's equivalent. Frontmatter and custom rules are unaffected and can still use any icon from any pack regardless of this setting. If a pack doesn't have a suitable icon for a particular file type, that one falls back to the Lucide icon instead of showing nothing.
 
 ### Colorful icons
 
@@ -52,8 +54,8 @@ Turn on **Colorful icons** to give every file and folder a color from a small fi
 
 - **Frontmatter icons** — toggle reading icons from frontmatter, and choose the property name.
 - **Default icons by file type** — toggle the built-in file type icons.
+- **Icon style** — choose which icon set (Lucide or a bundled pack) powers the automatic file-type, folder, and note icons.
 - **Colorful icons** — toggle deterministic per-item coloring from a fixed palette.
-- **Icon packs** — show or hide each bundled icon pack in the picker.
 - **Custom rules** — add, reorder, and delete rules; each rule has a target, a match type, a pattern, and an icon chosen from a searchable picker.
 
 ## Installation

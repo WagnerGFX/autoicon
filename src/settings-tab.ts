@@ -104,22 +104,6 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				},
 			},
 			{
-				type: "group",
-				heading: "Icon packs",
-				items: ICON_PACKS.map((pack, index) => ({
-					name: pack.name,
-					desc:
-						index === 0
-							? `${Object.keys(pack.icons).length} icons. Icons from enabled packs appear alongside Lucide's built-in icons in every icon picker; disabling a pack only hides it there — icons already assigned from it keep working.`
-							: `${Object.keys(pack.icons).length} icons`,
-					control: {
-						type: "toggle" as const,
-						key: `pack${pack.id[0].toUpperCase()}${pack.id.slice(1)}Enabled`,
-						defaultValue: true,
-					},
-				})),
-			},
-			{
 				type: "list",
 				heading: "Rules",
 				emptyState:
@@ -242,27 +226,6 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 					})
 			);
 
-		new Setting(containerEl).setName("Icon packs").setHeading();
-		new Setting(containerEl).setDesc(
-			"Icons from enabled packs appear alongside Lucide's built-in icons in every icon picker; disabling a pack only hides it there — icons already assigned from it keep working."
-		);
-		for (const pack of ICON_PACKS) {
-			const key = `pack${pack.id[0].toUpperCase()}${pack.id.slice(1)}Enabled` as
-				| "packUilEnabled"
-				| "packUimEnabled"
-				| "packCuidaEnabled"
-				| "packMsoutEnabled";
-			new Setting(containerEl)
-				.setName(pack.name)
-				.setDesc(`${Object.keys(pack.icons).length} icons`)
-				.addToggle((toggle) =>
-					toggle.setValue(this.plugin.settings[key]).onChange(async (value) => {
-						this.plugin.settings[key] = value;
-						await this.plugin.saveSettings();
-					})
-				);
-		}
-
 		new Setting(containerEl).setName("Rules").setHeading();
 		new Setting(containerEl)
 			.setDesc(
@@ -341,7 +304,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				button
 					.setButtonText(settings[iconKey].replace(/^lucide-/, "") || "Pick icon")
 					.onClick(() => {
-						new IconPickerModal(this.app, settings, (icon) => {
+						new IconPickerModal(this.app, (icon) => {
 							settings[iconKey] = icon;
 							void this.plugin.saveSettings();
 							this.refreshSettingsView();
@@ -406,7 +369,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						rule.icon ? rule.icon.replace(/^lucide-/, "") : "Pick icon"
 					)
 					.onClick(() => {
-						new IconPickerModal(this.app, this.plugin.settings, (icon) => {
+						new IconPickerModal(this.app, (icon) => {
 							rule.icon = icon;
 							void this.plugin.saveSettings();
 							this.refreshSettingsView();

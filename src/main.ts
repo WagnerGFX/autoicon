@@ -35,7 +35,7 @@ export default class AutoIconsPlugin extends Plugin {
 					return false;
 				}
 				if (!checking) {
-					new IconPickerModal(this.app, this.settings, (icon) => {
+					new IconPickerModal(this.app, (icon) => {
 						void this.app.fileManager.processFrontMatter(
 							file,
 							(frontmatter: Record<string, unknown>) => {

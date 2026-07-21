@@ -23,10 +23,6 @@ export interface AutoIconsSettings {
 	noteIconEnabled: boolean;
 	noteIcon: string;
 	rules: IconRule[];
-	packUilEnabled: boolean;
-	packUimEnabled: boolean;
-	packCuidaEnabled: boolean;
-	packMsoutEnabled: boolean;
 	colorfulIconsEnabled: boolean;
 }
 
@@ -40,10 +36,6 @@ export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	noteIconEnabled: true,
 	noteIcon: "lucide-file-text",
 	rules: [],
-	packUilEnabled: true,
-	packUimEnabled: true,
-	packCuidaEnabled: true,
-	packMsoutEnabled: true,
 	colorfulIconsEnabled: false,
 };
 
@@ -138,17 +130,6 @@ export function resolveCategoryIcon(category: IconCategory, style: IconStyle): s
 		}
 	}
 	return `lucide-${LUCIDE_CATEGORY_ICONS[category]}`;
-}
-
-const PACK_ENABLED_KEY: Record<IconPackId, keyof AutoIconsSettings> = {
-	uil: "packUilEnabled",
-	uim: "packUimEnabled",
-	cuida: "packCuidaEnabled",
-	msout: "packMsoutEnabled",
-};
-
-export function isPackEnabled(settings: AutoIconsSettings, packId: IconPackId): boolean {
-	return Boolean(settings[PACK_ENABLED_KEY[packId]]);
 }
 
 /**
