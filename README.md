@@ -28,6 +28,21 @@ Icons are resolved for each file and folder in this priority order:
 
 All icons come from the icon set built into Obsidian ([Lucide](https://lucide.dev)), so they automatically match your theme in both light and dark mode.
 
+### Icon packs
+
+Beyond Lucide, every icon picker (frontmatter, rules, default folder/note icon) can also search four bundled icon sets:
+
+- [Unicons](https://icon-sets.iconify.design/uil/) by Iconscout
+- [Unicons Monochrome](https://icon-sets.iconify.design/uim/) by Iconscout
+- [Cuida Icons](https://icon-sets.iconify.design/cuida/) by Sysvale
+- [Material Symbols (Outlined)](https://icon-sets.iconify.design/material-symbols/) by Google
+
+All four are bundled into the plugin at build time — nothing is downloaded at runtime, and the plugin makes no network requests. Each pack can be shown or hidden in the icon picker independently under **Settings → Icon packs**; hiding a pack only affects the picker, icons already assigned from it keep working.
+
+### Colorful icons
+
+Turn on **Colorful icons** to give every file and folder a color from a small fixed palette (red, orange, yellow, green, teal, blue, purple, pink), chosen deterministically from its path — the same item always gets the same color, so nothing shifts between reloads.
+
 ## Commands
 
 - **Set icon for current file** — opens a fuzzy-searchable icon picker and writes the chosen icon to the note's frontmatter.
@@ -37,6 +52,8 @@ All icons come from the icon set built into Obsidian ([Lucide](https://lucide.de
 
 - **Frontmatter icons** — toggle reading icons from frontmatter, and choose the property name.
 - **Default icons by file type** — toggle the built-in file type icons.
+- **Colorful icons** — toggle deterministic per-item coloring from a fixed palette.
+- **Icon packs** — show or hide each bundled icon pack in the picker.
 - **Custom rules** — add, reorder, and delete rules; each rule has a target, a match type, a pattern, and an icon chosen from a searchable picker.
 
 ## Installation
@@ -65,6 +82,8 @@ npm run build   # type-check and produce a production build
 
 To test locally, clone this repository into `<your-vault>/.obsidian/plugins/autoicons/` and run `npm run dev`, then enable the plugin in Obsidian.
 
+`npm run dev`/`npm run build` first run `scripts/generate-icon-packs.mjs`, which reads the `@iconify-json/*` packages and writes bundle-ready icon data to `src/generated/` (gitignored, regenerated on every build).
+
 ### Releasing
 
 1. Run `npm version patch|minor|major` — this bumps `package.json`, `manifest.json`, and `versions.json`.
@@ -74,3 +93,11 @@ To test locally, clone this repository into `<your-vault>/.obsidian/plugins/auto
 ## License
 
 [MIT](LICENSE)
+
+## Third-party icons
+
+Bundled at build time, no network requests involved:
+
+- [Unicons](https://github.com/Iconscout/unicons) and [Unicons Monochrome](https://github.com/Iconscout/unicons) by Iconscout — Apache 2.0
+- [Cuida Icons](https://github.com/Sysvale/cuida-icons) by Sysvale — Apache 2.0
+- [Material Symbols](https://github.com/google/material-design-icons) by Google — Apache 2.0

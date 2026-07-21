@@ -1,6 +1,7 @@
 # build output
 main.js
 *.js.map
+src/generated/
 
 # dependencies
 node_modules/

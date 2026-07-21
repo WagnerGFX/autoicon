@@ -7,6 +7,7 @@ import {
 } from "obsidian";
 import type AutoIconsPlugin from "./main";
 import { IconPickerModal } from "./icon-picker";
+import { ICON_PACKS } from "./icon-packs";
 import { createRule, IconRule, RuleMatchType, RuleTarget } from "./settings";
 
 export class AutoIconsSettingTab extends PluginSettingTab {
@@ -67,6 +68,31 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				render: (setting) => this.renderFallbackIcon(setting, "note"),
 			},
 			{
+				name: "Colorful icons",
+				desc: "Assign each file and folder a color from a fixed palette, based on its path. The color stays the same every time — it won't change on reload.",
+				control: {
+					type: "toggle",
+					key: "colorfulIconsEnabled",
+					defaultValue: false,
+				},
+			},
+			{
+				type: "group",
+				heading: "Icon packs",
+				items: ICON_PACKS.map((pack, index) => ({
+					name: pack.name,
+					desc:
+						index === 0
+							? `${Object.keys(pack.icons).length} icons. Icons from enabled packs appear alongside Lucide's built-in icons in every icon picker; disabling a pack only hides it there — icons already assigned from it keep working.`
+							: `${Object.keys(pack.icons).length} icons`,
+					control: {
+						type: "toggle" as const,
+						key: `pack${pack.id[0].toUpperCase()}${pack.id.slice(1)}Enabled`,
+						defaultValue: true,
+					},
+				})),
+			},
+			{
 				type: "list",
 				heading: "Rules",
 				emptyState:
@@ -108,7 +134,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				button
 					.setButtonText(settings[iconKey].replace(/^lucide-/, "") || "Pick icon")
 					.onClick(() => {
-						new IconPickerModal(this.app, (icon) => {
+						new IconPickerModal(this.app, settings, (icon) => {
 							settings[iconKey] = icon;
 							void this.plugin.saveSettings();
 							this.update();
@@ -173,7 +199,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						rule.icon ? rule.icon.replace(/^lucide-/, "") : "Pick icon"
 					)
 					.onClick(() => {
-						new IconPickerModal(this.app, (icon) => {
+						new IconPickerModal(this.app, this.plugin.settings, (icon) => {
 							rule.icon = icon;
 							void this.plugin.saveSettings();
 							this.update();

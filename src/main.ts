@@ -1,7 +1,9 @@
 import { getIconIds, normalizePath, Plugin, setIcon } from "obsidian";
 import { IconPickerModal } from "./icon-picker";
+import { registerIconPacks, unregisterIconPacks } from "./icon-packs";
 import {
 	AutoIconsSettings,
+	colorForPath,
 	DEFAULT_SETTINGS,
 	IconRule,
 	TYPE_ICONS,
@@ -18,6 +20,7 @@ export default class AutoIconsPlugin extends Plugin {
 	private knownIconIds: Set<string> | null = null;
 
 	async onload() {
+		registerIconPacks();
 		await this.loadSettings();
 
 		this.addSettingTab(new AutoIconsSettingTab(this.app, this));
@@ -31,7 +34,7 @@ export default class AutoIconsPlugin extends Plugin {
 					return false;
 				}
 				if (!checking) {
-					new IconPickerModal(this.app, (icon) => {
+					new IconPickerModal(this.app, this.settings, (icon) => {
 						void this.app.fileManager.processFrontMatter(
 							file,
 							(frontmatter: Record<string, unknown>) => {
@@ -102,6 +105,7 @@ export default class AutoIconsPlugin extends Plugin {
 		document
 			.querySelectorAll(`.${ICON_CLASS}`)
 			.forEach((el) => el.remove());
+		unregisterIconPacks();
 	}
 
 	async loadSettings() {
@@ -179,18 +183,15 @@ export default class AutoIconsPlugin extends Plugin {
 					return;
 				}
 				const isFolder = titleEl.classList.contains("nav-folder-title");
-				this.setItemIcon(titleEl, this.resolveIcon(path, isFolder));
+				this.setItemIcon(titleEl, this.resolveIcon(path, isFolder), path);
 			});
 		}
 	}
 
-	private setItemIcon(titleEl: HTMLElement, icon: string | null) {
+	private setItemIcon(titleEl: HTMLElement, icon: string | null, path: string) {
 		let iconEl = titleEl.querySelector<HTMLElement>(`:scope > .${ICON_CLASS}`);
 		if (!icon) {
 			iconEl?.remove();
-			return;
-		}
-		if (iconEl && iconEl.dataset.autoiconsIcon === icon) {
 			return;
 		}
 		if (!iconEl) {
@@ -200,8 +201,15 @@ export default class AutoIconsPlugin extends Plugin {
 			);
 			titleEl.insertBefore(iconEl, content ?? titleEl.firstChild);
 		}
-		iconEl.dataset.autoiconsIcon = icon;
-		setIcon(iconEl, icon);
+		if (iconEl.dataset.autoiconsIcon !== icon) {
+			iconEl.dataset.autoiconsIcon = icon;
+			setIcon(iconEl, icon);
+		}
+		if (this.settings.colorfulIconsEnabled) {
+			iconEl.style.color = colorForPath(path);
+		} else {
+			iconEl.style.removeProperty("color");
+		}
 	}
 
 	/** Priority: frontmatter property, then custom rules in order, then file type. */
