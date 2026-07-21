@@ -6,7 +6,7 @@ import {
 	setIcon,
 } from "obsidian";
 import type AutoIconsPlugin from "./main";
-import { IconPickerModal } from "./icon-picker";
+import { describeIconId, IconPickerModal } from "./icon-picker";
 import { ICON_PACKS } from "./icon-packs";
 import {
 	createRule,
@@ -302,7 +302,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		setting
 			.addButton((button) =>
 				button
-					.setButtonText(settings[iconKey].replace(/^lucide-/, "") || "Pick icon")
+					.setButtonText(describeIconId(settings[iconKey]) || "Pick icon")
 					.onClick(() => {
 						new IconPickerModal(this.app, (icon) => {
 							settings[iconKey] = icon;
@@ -365,9 +365,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			)
 			.addButton((button) =>
 				button
-					.setButtonText(
-						rule.icon ? rule.icon.replace(/^lucide-/, "") : "Pick icon"
-					)
+					.setButtonText(rule.icon ? describeIconId(rule.icon) : "Pick icon")
 					.onClick(() => {
 						new IconPickerModal(this.app, (icon) => {
 							rule.icon = icon;

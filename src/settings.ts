@@ -121,13 +121,16 @@ const PACK_CATEGORY_ICONS: Record<IconPackId, Partial<Record<IconCategory, strin
 	},
 };
 
-/** Resolves a category to an icon id for the given active style, falling back to Lucide. */
+/**
+ * Resolves a category to an icon id for the given active style, falling back
+ * to Lucide. Also falls back for an unrecognized style value — e.g. stored
+ * settings referencing a pack from a future version that no longer exists —
+ * rather than throwing.
+ */
 export function resolveCategoryIcon(category: IconCategory, style: IconStyle): string {
-	if (style !== "lucide") {
-		const name = PACK_CATEGORY_ICONS[style][category];
-		if (name) {
-			return `${style}-${name}`;
-		}
+	const name = PACK_CATEGORY_ICONS[style as IconPackId]?.[category];
+	if (name) {
+		return `${style}-${name}`;
 	}
 	return `lucide-${LUCIDE_CATEGORY_ICONS[category]}`;
 }

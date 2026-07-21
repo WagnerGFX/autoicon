@@ -218,8 +218,11 @@ export default class AutoIconsPlugin extends Plugin {
 		if (!isFolder && this.settings.frontmatterEnabled) {
 			const frontmatter = this.app.metadataCache.getCache(path)?.frontmatter;
 			const value: unknown = frontmatter?.[this.settings.frontmatterProperty];
-			if (typeof value === "string" && this.isKnownIcon(value.trim())) {
-				return value.trim();
+			if (typeof value === "string") {
+				const resolved = this.resolveKnownIcon(value.trim());
+				if (resolved) {
+					return resolved;
+				}
 			}
 		}
 
@@ -281,13 +284,18 @@ export default class AutoIconsPlugin extends Plugin {
 				return path === prefix || path.startsWith(prefix + "/");
 			}
 			case "extension": {
-				if (isFolder) {
+				if (isFolder || !name.includes(".")) {
 					return false;
 				}
-				const extension = name.includes(".")
-					? name.split(".").pop()?.toLowerCase()
-					: undefined;
-				return extension === rule.pattern.toLowerCase().replace(/^\./, "");
+				const target = rule.pattern.toLowerCase().replace(/^\./, "");
+				const suffixes = name.toLowerCase().split(".").slice(1);
+				// Match a bare segment (e.g. "excalidraw" in "sketch.excalidraw.md")
+				// or a full compound suffix (e.g. "excalidraw.md"), so a rule for
+				// either form catches the common "sketch.excalidraw.md" filename.
+				if (suffixes.includes(target)) {
+					return true;
+				}
+				return suffixes.some((_, i) => suffixes.slice(i).join(".") === target);
 			}
 			case "name":
 				return name.toLowerCase().includes(rule.pattern.toLowerCase());
@@ -305,14 +313,29 @@ export default class AutoIconsPlugin extends Plugin {
 	 * element (which would otherwise re-trigger the mutation observer forever).
 	 */
 	isKnownIcon(icon: string): boolean {
+		return this.resolveKnownIcon(icon) !== null;
+	}
+
+	/**
+	 * Like isKnownIcon(), but returns the fully-qualified id actually safe to
+	 * pass to setIcon() — accepting a bare Lucide name like "rocket" (which a
+	 * user might type into frontmatter) as an alias for "lucide-rocket", and
+	 * normalizing it. Returning the bare form instead would validate fine but
+	 * silently render nothing for any Lucide icon without a legacy bare alias.
+	 */
+	private resolveKnownIcon(icon: string): string | null {
 		if (!icon) {
-			return false;
+			return null;
 		}
 		if (this.knownIconIds === null || this.knownIconIds.size === 0) {
 			this.knownIconIds = new Set(getIconIds());
 		}
-		return (
-			this.knownIconIds.has(icon) || this.knownIconIds.has("lucide-" + icon)
-		);
+		if (this.knownIconIds.has(icon)) {
+			return icon;
+		}
+		if (this.knownIconIds.has("lucide-" + icon)) {
+			return "lucide-" + icon;
+		}
+		return null;
 	}
 }
