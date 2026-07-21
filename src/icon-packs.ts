@@ -18,10 +18,14 @@ export interface IconPackInfo {
  * requests are made at runtime — see README for attribution.
  */
 export const ICON_PACKS: IconPackInfo[] = [
-	{ id: "uil", name: "Unicons", icons: uilIcons },
-	{ id: "uim", name: "Unicons Monochrome", icons: uimIcons },
-	{ id: "cuida", name: "Cuida Icons", icons: cuidaIcons },
-	{ id: "msout", name: "Material Symbols (Outlined)", icons: msoutIcons },
+	{ id: "uil", name: "Unicons", icons: uilIcons as Record<string, string> },
+	{ id: "uim", name: "Unicons Monochrome", icons: uimIcons as Record<string, string> },
+	{ id: "cuida", name: "Cuida Icons", icons: cuidaIcons as Record<string, string> },
+	{
+		id: "msout",
+		name: "Material Symbols (Outlined)",
+		icons: msoutIcons as Record<string, string>,
+	},
 ];
 
 /** Returns the owning pack id for a bundled icon id, or null for Lucide/native icons. */

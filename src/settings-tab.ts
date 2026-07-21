@@ -238,7 +238,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 					.onClick(async () => {
 						this.plugin.settings.rules.push(createRule());
 						await this.plugin.saveSettings();
-						this.display();
+						this.refreshSettingsView();
 					})
 			);
 
@@ -255,7 +255,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 							const rules = this.plugin.settings.rules;
 							[rules[index - 1], rules[index]] = [rules[index], rules[index - 1]];
 							await this.plugin.saveSettings();
-							this.display();
+							this.refreshSettingsView();
 						})
 				)
 				.addExtraButton((button) =>
@@ -265,7 +265,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						.onClick(async () => {
 							this.plugin.settings.rules.splice(index, 1);
 							await this.plugin.saveSettings();
-							this.display();
+							this.refreshSettingsView();
 						})
 				);
 		});
