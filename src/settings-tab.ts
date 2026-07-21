@@ -8,7 +8,14 @@ import {
 import type AutoIconsPlugin from "./main";
 import { IconPickerModal } from "./icon-picker";
 import { ICON_PACKS } from "./icon-packs";
-import { createRule, IconRule, RuleMatchType, RuleTarget } from "./settings";
+import {
+	createRule,
+	IconRule,
+	IconStyle,
+	resolveCategoryIcon,
+	RuleMatchType,
+	RuleTarget,
+} from "./settings";
 
 export class AutoIconsSettingTab extends PluginSettingTab {
 	plugin: AutoIconsPlugin;
@@ -22,6 +29,21 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		await super.setControlValue(key, value);
 		this.plugin.scheduleRefresh();
+	}
+
+	/**
+	 * update() only exists on Obsidian versions that support the declarative
+	 * settings API — the same versions that call getSettingDefinitions() in
+	 * the first place. Helpers shared with the display() fallback (below) use
+	 * this instead of calling either directly, so they work correctly
+	 * whichever rendering path the running app actually uses.
+	 */
+	private refreshSettingsView(): void {
+		if (typeof this.update === "function") {
+			this.update();
+		} else {
+			this.display();
+		}
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
@@ -56,6 +78,11 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 					key: "typeIconsEnabled",
 					defaultValue: true,
 				},
+			},
+			{
+				name: "Icon style",
+				desc: "Choose which icon set powers the automatic file-type, folder, and note icons below. Frontmatter and custom rules can still use any icon from any pack, regardless of this setting.",
+				render: (setting) => this.renderIconStyle(setting),
 			},
 			{
 				name: "Default folder icon",
@@ -177,6 +204,14 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 					})
 			);
 
+		this.renderIconStyle(
+			new Setting(containerEl)
+				.setName("Icon style")
+				.setDesc(
+					"Choose which icon set powers the automatic file-type, folder, and note icons below. Frontmatter and custom rules can still use any icon from any pack, regardless of this setting."
+				)
+		);
+
 		this.renderFallbackIcon(
 			new Setting(containerEl)
 				.setName("Default folder icon")
@@ -273,6 +308,30 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		});
 	}
 
+	/** Sets activeIconStyle and re-derives the folder/note default icons from it. */
+	private async applyIconStyle(style: IconStyle): Promise<void> {
+		const settings = this.plugin.settings;
+		settings.activeIconStyle = style;
+		settings.folderIcon = resolveCategoryIcon("folder", style);
+		settings.noteIcon = resolveCategoryIcon("document", style);
+		await this.plugin.saveSettings();
+	}
+
+	private renderIconStyle(setting: Setting) {
+		setting.addDropdown((dropdown) => {
+			dropdown.addOption("lucide", "Lucide (default)");
+			for (const pack of ICON_PACKS) {
+				dropdown.addOption(pack.id, pack.name);
+			}
+			dropdown
+				.setValue(this.plugin.settings.activeIconStyle)
+				.onChange(async (value) => {
+					await this.applyIconStyle(value as IconStyle);
+					this.refreshSettingsView();
+				});
+		});
+	}
+
 	private renderFallbackIcon(setting: Setting, kind: "folder" | "note") {
 		const settings = this.plugin.settings;
 		const iconKey = kind === "folder" ? "folderIcon" : "noteIcon";
@@ -285,7 +344,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						new IconPickerModal(this.app, settings, (icon) => {
 							settings[iconKey] = icon;
 							void this.plugin.saveSettings();
-							this.update();
+							this.refreshSettingsView();
 						}).open();
 					})
 			)
@@ -350,7 +409,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						new IconPickerModal(this.app, this.plugin.settings, (icon) => {
 							rule.icon = icon;
 							void this.plugin.saveSettings();
-							this.update();
+							this.refreshSettingsView();
 						}).open();
 					})
 			);

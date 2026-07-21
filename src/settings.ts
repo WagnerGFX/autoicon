@@ -11,10 +11,13 @@ export interface IconRule {
 	icon: string;
 }
 
+export type IconStyle = "lucide" | IconPackId;
+
 export interface AutoIconsSettings {
 	frontmatterEnabled: boolean;
 	frontmatterProperty: string;
 	typeIconsEnabled: boolean;
+	activeIconStyle: IconStyle;
 	folderIconEnabled: boolean;
 	folderIcon: string;
 	noteIconEnabled: boolean;
@@ -31,6 +34,7 @@ export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	frontmatterEnabled: true,
 	frontmatterProperty: "icon",
 	typeIconsEnabled: true,
+	activeIconStyle: "lucide",
 	folderIconEnabled: true,
 	folderIcon: "lucide-folder",
 	noteIconEnabled: true,
@@ -42,6 +46,99 @@ export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	packMsoutEnabled: true,
 	colorfulIconsEnabled: false,
 };
+
+/** The semantic category behind each per-extension default icon, folder icon, and note icon. */
+export type IconCategory =
+	| "image"
+	| "audio"
+	| "video"
+	| "document"
+	| "canvas"
+	| "drawing"
+	| "list"
+	| "code"
+	| "archive"
+	| "table"
+	| "folder";
+
+const LUCIDE_CATEGORY_ICONS: Record<IconCategory, string> = {
+	image: "image",
+	audio: "file-audio",
+	video: "file-video",
+	document: "file-text",
+	canvas: "layout-dashboard",
+	drawing: "pencil-ruler",
+	list: "layout-list",
+	code: "file-code",
+	archive: "archive",
+	table: "table",
+	folder: "folder",
+};
+
+/**
+ * Bare (unprefixed) icon names within each bundled pack for each category.
+ * Verified to exist in the generated pack data (see scripts/generate-icon-packs.mjs).
+ * A pack that lacks a suitable icon for a category simply omits that key —
+ * resolveCategoryIcon() then falls back to the Lucide icon for it.
+ */
+const PACK_CATEGORY_ICONS: Record<IconPackId, Partial<Record<IconCategory, string>>> = {
+	uil: {
+		image: "image",
+		audio: "music",
+		video: "video",
+		document: "file-alt",
+		canvas: "dashboard",
+		drawing: "edit-alt",
+		list: "list-ul",
+		code: "code",
+		archive: "archive",
+		table: "table",
+		folder: "folder",
+	},
+	uim: {
+		image: "image-v",
+		document: "document-layout-center",
+		canvas: "apps",
+		list: "list-ul",
+		archive: "box",
+		table: "table",
+	},
+	cuida: {
+		image: "image-outline",
+		audio: "headphone-outline",
+		video: "videocam-outline",
+		document: "document-outline",
+		canvas: "dashboard-outline",
+		drawing: "edit-outline",
+		list: "list-outline",
+		archive: "box-outline",
+		table: "grid-outline",
+	},
+	msout: {
+		image: "image",
+		audio: "headphones",
+		video: "movie",
+		document: "description",
+		canvas: "dashboard",
+		drawing: "draw",
+		list: "list",
+		code: "code",
+		archive: "archive",
+		table: "table",
+		folder: "folder",
+	},
+};
+
+/** Resolves a category to an icon id for the given active style, falling back to Lucide. */
+export function resolveCategoryIcon(category: IconCategory, style: IconStyle): string {
+	if (style !== "lucide") {
+		const name = PACK_CATEGORY_ICONS[style][category];
+		if (name) {
+			return `${style}-${name}`;
+		}
+	}
+	return `lucide-${LUCIDE_CATEGORY_ICONS[category]}`;
+}
 
 const PACK_ENABLED_KEY: Record<IconPackId, keyof AutoIconsSettings> = {
 	uil: "packUilEnabled",
@@ -79,8 +176,12 @@ export function colorForPath(path: string): string {
 	return MAIN_COLORS[Math.abs(hash) % MAIN_COLORS.length];
 }
 
-/** Default icons applied per file extension when "Default icons by file type" is enabled. */
-export const TYPE_ICONS: Record<string, string> = {
+/**
+ * Category applied per file extension when "Default icons by file type" is
+ * enabled. Resolved to an actual icon id via resolveCategoryIcon() using the
+ * active icon style, so switching styles re-skins every one of these at once.
+ */
+export const TYPE_ICONS: Record<string, IconCategory> = {
 	png: "image",
 	jpg: "image",
 	jpeg: "image",
@@ -89,31 +190,31 @@ export const TYPE_ICONS: Record<string, string> = {
 	webp: "image",
 	bmp: "image",
 	avif: "image",
-	mp3: "file-audio",
-	wav: "file-audio",
-	ogg: "file-audio",
-	flac: "file-audio",
-	m4a: "file-audio",
-	"3gp": "file-audio",
-	mp4: "file-video",
-	webm: "file-video",
-	mov: "file-video",
-	mkv: "file-video",
-	avi: "file-video",
-	pdf: "file-text",
-	canvas: "layout-dashboard",
-	excalidraw: "pencil-ruler",
-	"excalidraw.md": "pencil-ruler",
-	base: "layout-list",
-	js: "file-code",
-	ts: "file-code",
-	css: "file-code",
-	html: "file-code",
-	json: "file-code",
-	yaml: "file-code",
-	yml: "file-code",
-	xml: "file-code",
-	py: "file-code",
+	mp3: "audio",
+	wav: "audio",
+	ogg: "audio",
+	flac: "audio",
+	m4a: "audio",
+	"3gp": "audio",
+	mp4: "video",
+	webm: "video",
+	mov: "video",
+	mkv: "video",
+	avi: "video",
+	pdf: "document",
+	canvas: "canvas",
+	excalidraw: "drawing",
+	"excalidraw.md": "drawing",
+	base: "list",
+	js: "code",
+	ts: "code",
+	css: "code",
+	html: "code",
+	json: "code",
+	yaml: "code",
+	yml: "code",
+	xml: "code",
+	py: "code",
 	zip: "archive",
 	rar: "archive",
 	"7z": "archive",

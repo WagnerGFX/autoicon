@@ -6,6 +6,7 @@ import {
 	colorForPath,
 	DEFAULT_SETTINGS,
 	IconRule,
+	resolveCategoryIcon,
 	TYPE_ICONS,
 } from "./settings";
 import { AutoIconsSettingTab } from "./settings-tab";
@@ -253,9 +254,9 @@ export default class AutoIconsPlugin extends Plugin {
 			if (parts.length > 1 && parts[0] !== "") {
 				// Longest compound extension wins, e.g. "excalidraw.md" over "md".
 				for (let i = 1; i < parts.length; i++) {
-					const icon = TYPE_ICONS[parts.slice(i).join(".")];
-					if (icon) {
-						return icon;
+					const category = TYPE_ICONS[parts.slice(i).join(".")];
+					if (category) {
+						return resolveCategoryIcon(category, this.settings.activeIconStyle);
 					}
 				}
 			}
