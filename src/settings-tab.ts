@@ -125,6 +125,154 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		];
 	}
 
+	/**
+	 * Fallback for Obsidian versions that don't invoke getSettingDefinitions().
+	 * Per Obsidian's own docs, display() is simply never called when
+	 * getSettingDefinitions() returns a non-empty array, so this only runs on
+	 * older apps — otherwise the settings pane renders blank on them, since
+	 * the inherited base display() is a no-op.
+	 */
+	display(): void {
+		const { containerEl } = this;
+		containerEl.empty();
+
+		new Setting(containerEl)
+			.setName("Frontmatter icons")
+			.setDesc(
+				"Read the icon for a note from a frontmatter property. Frontmatter takes priority over rules and file type icons."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.frontmatterEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.frontmatterEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Frontmatter property")
+			.setDesc('Property name that holds the icon, e.g. "icon".')
+			.addText((text) =>
+				text
+					.setPlaceholder("icon")
+					.setValue(this.plugin.settings.frontmatterProperty)
+					.onChange(async (value) => {
+						this.plugin.settings.frontmatterProperty = value.trim() || "icon";
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Default icons by file type")
+			.setDesc(
+				"Show a generic icon for common file types such as images, audio, video, PDF, and code files."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.typeIconsEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.typeIconsEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		this.renderFallbackIcon(
+			new Setting(containerEl)
+				.setName("Default folder icon")
+				.setDesc("Shown on every folder that has no matching rule."),
+			"folder"
+		);
+
+		this.renderFallbackIcon(
+			new Setting(containerEl)
+				.setName("Default note icon")
+				.setDesc(
+					"Shown on every note that has no frontmatter icon and no matching rule."
+				),
+			"note"
+		);
+
+		new Setting(containerEl)
+			.setName("Colorful icons")
+			.setDesc(
+				"Assign each file and folder a color from a fixed palette, based on its path. The color stays the same every time — it won't change on reload."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.colorfulIconsEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.colorfulIconsEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl).setName("Icon packs").setHeading();
+		new Setting(containerEl).setDesc(
+			"Icons from enabled packs appear alongside Lucide's built-in icons in every icon picker; disabling a pack only hides it there — icons already assigned from it keep working."
+		);
+		for (const pack of ICON_PACKS) {
+			const key = `pack${pack.id[0].toUpperCase()}${pack.id.slice(1)}Enabled` as
+				| "packUilEnabled"
+				| "packUimEnabled"
+				| "packCuidaEnabled"
+				| "packMsoutEnabled";
+			new Setting(containerEl)
+				.setName(pack.name)
+				.setDesc(`${Object.keys(pack.icons).length} icons`)
+				.addToggle((toggle) =>
+					toggle.setValue(this.plugin.settings[key]).onChange(async (value) => {
+						this.plugin.settings[key] = value;
+						await this.plugin.saveSettings();
+					})
+				);
+		}
+
+		new Setting(containerEl).setName("Rules").setHeading();
+		new Setting(containerEl)
+			.setDesc(
+				"Rules are checked top to bottom; the first match wins. A path rule also applies to everything inside the matched folder."
+			)
+			.addButton((button) =>
+				button
+					.setButtonText("Add rule")
+					.setCta()
+					.onClick(async () => {
+						this.plugin.settings.rules.push(createRule());
+						await this.plugin.saveSettings();
+						this.display();
+					})
+			);
+
+		this.plugin.settings.rules.forEach((rule, index) => {
+			const setting = new Setting(containerEl).setName(`Rule ${index + 1}`);
+			this.renderRule(setting, rule);
+			setting
+				.addExtraButton((button) =>
+					button
+						.setIcon("arrow-up")
+						.setTooltip("Move up")
+						.setDisabled(index === 0)
+						.onClick(async () => {
+							const rules = this.plugin.settings.rules;
+							[rules[index - 1], rules[index]] = [rules[index], rules[index - 1]];
+							await this.plugin.saveSettings();
+							this.display();
+						})
+				)
+				.addExtraButton((button) =>
+					button
+						.setIcon("trash")
+						.setTooltip("Delete rule")
+						.onClick(async () => {
+							this.plugin.settings.rules.splice(index, 1);
+							await this.plugin.saveSettings();
+							this.display();
+						})
+				);
+		});
+	}
+
 	private renderFallbackIcon(setting: Setting, kind: "folder" | "note") {
 		const settings = this.plugin.settings;
 		const iconKey = kind === "folder" ? "folderIcon" : "noteIcon";
