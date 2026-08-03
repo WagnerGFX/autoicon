@@ -3,15 +3,16 @@ import {
 	PluginSettingTab,
 	Setting,
 	SettingDefinitionItem,
-	setIcon,
 } from "obsidian";
 import type AutoIconsPlugin from "./main";
 import { describeIconId, IconPickerModal } from "./icon-picker";
-import { ICON_PACKS } from "./icon-packs";
+import { ICON_PACKS, renderIconInto } from "./icon-packs";
 import {
 	createRule,
+	DEFAULT_ICON_SIZE,
 	IconRule,
 	IconStyle,
+	MAIN_COLORS,
 	resolveCategoryIcon,
 	RuleMatchType,
 	RuleTarget,
@@ -29,6 +30,9 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		await super.setControlValue(key, value);
 		this.plugin.scheduleRefresh();
+		if (typeof this.refreshDomState === "function") {
+			this.refreshDomState();
+		}
 	}
 
 	/**
@@ -59,7 +63,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			},
 			{
 				name: "Frontmatter property",
-				desc: 'Property name that holds the icon, e.g. "icon".',
+				desc: 'Property name that holds the icon, e.g. "icon". Set the property to "none" in a note to hide its icon entirely.',
 				control: {
 					type: "text",
 					key: "frontmatterProperty",
@@ -95,38 +99,96 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				render: (setting) => this.renderFallbackIcon(setting, "note"),
 			},
 			{
-				name: "Colorful icons",
-				desc: "Assign each file and folder a color from a fixed palette, based on its path. The color stays the same every time — it won't change on reload.",
+				name: "Icon size",
+				desc: "Size of the icons the plugin renders, in pixels.",
 				control: {
-					type: "toggle",
-					key: "colorfulIconsEnabled",
-					defaultValue: false,
+					type: "slider",
+					key: "iconSize",
+					defaultValue: DEFAULT_ICON_SIZE,
+					min: 12,
+					max: 32,
+					step: 1,
+					displayFormat: (value: number) => `${value}px`,
 				},
+			},
+			{
+				type: "group",
+				heading: "Where icons appear",
+				items: [
+					{
+						name: "Tab headers",
+						desc: "Show each open file's icon in its tab header.",
+						control: {
+							type: "toggle",
+							key: "tabIconsEnabled",
+							defaultValue: true,
+						},
+					},
+					{
+						name: "Inline titles",
+						desc: "Show the note's icon next to its inline title.",
+						control: {
+							type: "toggle",
+							key: "inlineTitleIconsEnabled",
+							defaultValue: true,
+						},
+					},
+					{
+						name: "Links in reading view",
+						desc: "Show the target note's icon on internal links. Applies to notes as they are (re)rendered.",
+						control: {
+							type: "toggle",
+							key: "linkIconsEnabled",
+							defaultValue: true,
+						},
+					},
+				],
+			},
+			{
+				type: "group",
+				heading: "Colors",
+				items: [
+					{
+						name: "Colorful icons",
+						desc: "Assign each file and folder a color from the palette below, based on its path. The color stays the same every time — it won't change on reload.",
+						control: {
+							type: "toggle",
+							key: "colorfulIconsEnabled",
+							defaultValue: false,
+						},
+					},
+					{
+						name: "Palette",
+						desc: "Colors used by colorful icons.",
+						visible: () => this.plugin.settings.colorfulIconsEnabled,
+						render: (setting: Setting) => this.renderPalette(setting),
+					},
+				],
 			},
 			{
 				type: "list",
 				heading: "Rules",
 				emptyState:
-					"No rules yet. Add one to assign icons by path, extension, name, or regex. Rules are checked top to bottom; the first match wins.",
+					"No rules yet. Add one to assign icons by path, extension, name, tag, or regex. Rules are checked top to bottom; the first match wins.",
 				addItem: {
 					name: "Add rule",
 					action: () => {
 						this.plugin.settings.rules.push(createRule());
 						void this.plugin.saveSettings();
-						this.update();
+						this.refreshSettingsView();
 					},
 				},
 				onDelete: (index) => {
 					this.plugin.settings.rules.splice(index, 1);
 					void this.plugin.saveSettings();
-					this.update();
+					this.refreshSettingsView();
 				},
 				onReorder: (oldIndex, newIndex) => {
 					const rules = this.plugin.settings.rules;
 					const [moved] = rules.splice(oldIndex, 1);
 					rules.splice(newIndex, 0, moved);
 					void this.plugin.saveSettings();
-					this.update();
+					this.refreshSettingsView();
 				},
 				items: this.plugin.settings.rules.map((rule, index) => ({
 					name: `Rule ${index + 1}`,
@@ -163,7 +225,9 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Frontmatter property")
-			.setDesc('Property name that holds the icon, e.g. "icon".')
+			.setDesc(
+				'Property name that holds the icon, e.g. "icon". Set the property to "none" in a note to hide its icon entirely.'
+			)
 			.addText((text) =>
 				text
 					.setPlaceholder("icon")
@@ -213,9 +277,65 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		);
 
 		new Setting(containerEl)
+			.setName("Icon size")
+			.setDesc("Size of the icons the plugin renders, in pixels.")
+			.addSlider((slider) =>
+				slider
+					.setLimits(12, 32, 1)
+					.setValue(this.plugin.settings.iconSize)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.iconSize = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl).setName("Where icons appear").setHeading();
+
+		new Setting(containerEl)
+			.setName("Tab headers")
+			.setDesc("Show each open file's icon in its tab header.")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.tabIconsEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.tabIconsEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Inline titles")
+			.setDesc("Show the note's icon next to its inline title.")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.inlineTitleIconsEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.inlineTitleIconsEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Links in reading view")
+			.setDesc(
+				"Show the target note's icon on internal links. Applies to notes as they are (re)rendered."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.linkIconsEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.linkIconsEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl).setName("Colors").setHeading();
+
+		new Setting(containerEl)
 			.setName("Colorful icons")
 			.setDesc(
-				"Assign each file and folder a color from a fixed palette, based on its path. The color stays the same every time — it won't change on reload."
+				"Assign each file and folder a color from the palette below, based on its path. The color stays the same every time — it won't change on reload."
 			)
 			.addToggle((toggle) =>
 				toggle
@@ -225,6 +345,12 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
+		this.renderPalette(
+			new Setting(containerEl)
+				.setName("Palette")
+				.setDesc("Colors used by colorful icons.")
+		);
 
 		new Setting(containerEl).setName("Rules").setHeading();
 		new Setting(containerEl)
@@ -319,11 +445,41 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			);
 	}
 
+	private renderPalette(setting: Setting) {
+		const settings = this.plugin.settings;
+		const palette = settings.colorPalette.length > 0 ? settings.colorPalette : [...MAIN_COLORS];
+		palette.forEach((color, index) => {
+			setting.addColorPicker((picker) =>
+				picker.setValue(color).onChange((value) => {
+					if (settings.colorPalette.length === 0) {
+						settings.colorPalette = [...MAIN_COLORS];
+					}
+					settings.colorPalette[index] = value;
+					void this.plugin.saveSettings();
+				})
+			);
+		});
+		setting.addExtraButton((button) =>
+			button
+				.setIcon("rotate-ccw")
+				.setTooltip("Reset palette")
+				.onClick(() => {
+					settings.colorPalette = [];
+					void this.plugin.saveSettings();
+					this.refreshSettingsView();
+				})
+		);
+	}
+
 	private renderRule(setting: Setting, rule: IconRule) {
 		const preview = createSpan({ cls: "autoicons-rule-preview" });
 		setting.nameEl.appendChild(preview);
-		if (this.plugin.isKnownIcon(rule.icon)) {
-			setIcon(preview, rule.icon);
+		const previewIcon = this.plugin.resolveDisplayIcon(rule.icon);
+		if (previewIcon) {
+			renderIconInto(preview, previewIcon);
+			if (rule.color) {
+				preview.style.color = rule.color;
+			}
 		}
 
 		setting
@@ -346,6 +502,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						path: "Path starts with",
 						extension: "Extension is",
 						name: "Name contains",
+						tag: "Has tag",
 						regex: "Path matches regex",
 					})
 					.setValue(rule.matchType)
@@ -373,6 +530,34 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 							this.refreshSettingsView();
 						}).open();
 					})
+			)
+			.addColorPicker((picker) =>
+				picker.setValue(rule.color ?? "#888888").onChange((value) => {
+					rule.color = value;
+					void this.plugin.saveSettings();
+					this.updatePreviewColor(setting, rule);
+				})
+			)
+			.addExtraButton((button) =>
+				button
+					.setIcon("paint-bucket")
+					.setTooltip("Clear color (use colorful icons / theme default)")
+					.onClick(() => {
+						delete rule.color;
+						void this.plugin.saveSettings();
+						this.refreshSettingsView();
+					})
 			);
+	}
+
+	private updatePreviewColor(setting: Setting, rule: IconRule) {
+		const preview = setting.nameEl.querySelector<HTMLElement>(".autoicons-rule-preview");
+		if (preview) {
+			if (rule.color) {
+				preview.style.color = rule.color;
+			} else {
+				preview.style.removeProperty("color");
+			}
+		}
 	}
 }

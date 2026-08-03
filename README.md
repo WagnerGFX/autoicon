@@ -6,7 +6,9 @@ An [Obsidian](https://obsidian.md) plugin that automatically adds icons to files
 
 Icons are resolved for each file and folder in this priority order:
 
-1. **Frontmatter icons** — give any note an icon by adding a property to its frontmatter:
+1. **Per-item icons** — right-click any file or folder in the explorer and choose **Set icon**. Notes store the icon in frontmatter; folders and other files are remembered by the plugin (and follow the item through renames and moves).
+
+2. **Frontmatter icons** — give any note an icon by adding a property to its frontmatter:
 
    ```yaml
    ---
@@ -14,17 +16,26 @@ Icons are resolved for each file and folder in this priority order:
    ---
    ```
 
-   The property name is configurable (default: `icon`). Use the **Set icon for current file** command to pick an icon from a searchable list — the frontmatter is updated for you.
+   The property name is configurable (default: `icon`). Emoji work too (`icon: 📚`), and `icon: none` hides the icon for that note entirely. Use the **Set icon for current file** command to pick an icon from a searchable list — the frontmatter is updated for you.
 
-2. **Custom rules** — assign icons automatically based on:
+3. **Custom rules** — assign icons automatically based on:
    - **Path starts with** — e.g. everything under `Projects/` gets a briefcase icon (applies to the folder and everything inside it)
    - **Extension is** — e.g. all `.excalidraw` files get a pencil icon
    - **Name contains** — e.g. anything with "meeting" in the name gets a calendar icon
+   - **Has tag** — e.g. every note tagged `#project` gets a briefcase icon (nested tags like `#project/web` match too)
    - **Path matches regex** — for advanced patterns
 
-   Each rule can target files, folders, or both. Rules are checked top to bottom and the first match wins; rules can be reordered in settings.
+   Each rule can target files, folders, or both, and can optionally assign a fixed color. Rules are checked top to bottom and the first match wins; rules can be reordered in settings.
 
-3. **Default icons by file type** — images, audio, video, PDF, canvas, code, archives, and spreadsheets get a sensible icon out of the box. Can be turned off.
+4. **Default icons by file type** — images, audio, video, PDF, canvas, code, archives, and spreadsheets get a sensible icon out of the box. Can be turned off.
+
+### Where icons appear
+
+Beyond the file explorer, icons also show in **tab headers**, next to **inline titles**, and on **internal links in reading view** — each surface can be toggled independently, and icon size is adjustable.
+
+### Emoji
+
+Anywhere an icon can go, an emoji can go instead: type or paste one into the icon picker and it appears as the first suggestion, or write it straight into frontmatter.
 
 All icons come from the icon set built into Obsidian ([Lucide](https://lucide.dev)) by default, so they automatically match your theme in both light and dark mode.
 
@@ -43,20 +54,24 @@ Pick one under **Settings → Icon style** to re-skin every automatic icon at on
 
 ### Colorful icons
 
-Turn on **Colorful icons** to give every file and folder a color from a small fixed palette (red, orange, yellow, green, teal, blue, purple, pink), chosen deterministically from its path — the same item always gets the same color, so nothing shifts between reloads.
+Turn on **Colorful icons** to give every file and folder a color from a palette (red, orange, yellow, green, teal, blue, purple, pink by default — every color is editable in settings), chosen deterministically from its path — the same item always gets the same color, so nothing shifts between reloads. Individual rules can override this with a fixed color of their own.
 
 ## Commands
 
 - **Set icon for current file** — opens a fuzzy-searchable icon picker and writes the chosen icon to the note's frontmatter.
-- **Remove icon from current file** — removes the icon property from the note's frontmatter.
+- **Remove icon from current file** — removes the note's icon (frontmatter or per-item).
+
+Both are also available by right-clicking any file or folder in the explorer.
 
 ## Settings
 
 - **Frontmatter icons** — toggle reading icons from frontmatter, and choose the property name.
 - **Default icons by file type** — toggle the built-in file type icons.
 - **Icon style** — choose which icon set (Lucide or a bundled pack) powers the automatic file-type, folder, and note icons.
-- **Colorful icons** — toggle deterministic per-item coloring from a fixed palette.
-- **Custom rules** — add, reorder, and delete rules; each rule has a target, a match type, a pattern, and an icon chosen from a searchable picker.
+- **Icon size** — adjust icon size from 12 to 32 pixels.
+- **Where icons appear** — toggle tab header, inline title, and reading-view link icons independently.
+- **Colorful icons** — toggle deterministic per-item coloring, and customize the palette.
+- **Custom rules** — add, reorder, and delete rules; each rule has a target, a match type, a pattern, an icon chosen from a searchable picker, and an optional color.
 
 ## Installation
 

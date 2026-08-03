@@ -1,7 +1,7 @@
 import type { IconPackId } from "./icon-packs";
 
 export type RuleTarget = "file" | "folder" | "both";
-export type RuleMatchType = "path" | "extension" | "name" | "regex";
+export type RuleMatchType = "path" | "extension" | "name" | "tag" | "regex";
 
 export interface IconRule {
 	id: string;
@@ -9,6 +9,8 @@ export interface IconRule {
 	matchType: RuleMatchType;
 	pattern: string;
 	icon: string;
+	/** Optional fixed color for icons this rule assigns; overrides colorful icons. */
+	color?: string;
 }
 
 export type IconStyle = "lucide" | IconPackId;
@@ -23,8 +25,18 @@ export interface AutoIconsSettings {
 	noteIconEnabled: boolean;
 	noteIcon: string;
 	rules: IconRule[];
+	/** Per-item icons assigned via the context menu, keyed by vault path (folders and non-note files). */
+	customIcons: Record<string, string>;
 	colorfulIconsEnabled: boolean;
+	colorPalette: string[];
+	tabIconsEnabled: boolean;
+	inlineTitleIconsEnabled: boolean;
+	linkIconsEnabled: boolean;
+	/** Icon size in pixels for all icons the plugin renders. */
+	iconSize: number;
 }
+
+export const DEFAULT_ICON_SIZE = 16;
 
 export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	frontmatterEnabled: true,
@@ -36,7 +48,13 @@ export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	noteIconEnabled: true,
 	noteIcon: "lucide-file-text",
 	rules: [],
+	customIcons: {},
 	colorfulIconsEnabled: false,
+	colorPalette: [],
+	tabIconsEnabled: true,
+	inlineTitleIconsEnabled: true,
+	linkIconsEnabled: true,
+	iconSize: DEFAULT_ICON_SIZE,
 };
 
 /** The semantic category behind each per-extension default icon, folder icon, and note icon. */
@@ -136,10 +154,11 @@ export function resolveCategoryIcon(category: IconCategory, style: IconStyle): s
 }
 
 /**
- * A small fixed palette of primary/secondary hues ("main colors") used for
+ * The default palette of primary/secondary hues ("main colors") used for
  * the colorful icons feature. Each item gets one color, chosen
  * deterministically from its path so it stays stable across reloads instead
- * of re-rolling on every repaint.
+ * of re-rolling on every repaint. Users can override the palette in settings;
+ * an empty stored palette means "use these defaults".
  */
 export const MAIN_COLORS: string[] = [
 	"#e53935", // red
@@ -152,12 +171,13 @@ export const MAIN_COLORS: string[] = [
 	"#d81b60", // pink
 ];
 
-export function colorForPath(path: string): string {
+export function colorForPath(path: string, palette: string[]): string {
+	const colors = palette.length > 0 ? palette : MAIN_COLORS;
 	let hash = 0;
 	for (let i = 0; i < path.length; i++) {
 		hash = (hash * 31 + path.charCodeAt(i)) | 0;
 	}
-	return MAIN_COLORS[Math.abs(hash) % MAIN_COLORS.length];
+	return colors[Math.abs(hash) % colors.length];
 }
 
 /**

@@ -1,15 +1,45 @@
-/* Icon injected before file and folder names in the file explorer */
+/* Icon injected before file and folder names in the file explorer,
+   and reused for tab headers, inline titles, and links */
 .autoicons-icon {
 	display: inline-flex;
 	align-items: center;
 	margin-inline-end: var(--size-2-2);
 	vertical-align: middle;
 	color: var(--icon-color);
+	/* emoji icons render as text */
+	font-size: var(--autoicons-icon-size, var(--icon-s));
+	line-height: 1;
 }
 
 .autoicons-icon svg {
-	width: var(--icon-s);
-	height: var(--icon-s);
+	width: var(--autoicons-icon-size, var(--icon-s));
+	height: var(--autoicons-icon-size, var(--icon-s));
+}
+
+/* Tab header icons: replace the built-in file icon */
+.autoicons-tab-icon {
+	margin-inline-end: 0;
+}
+
+/* Obsidian's own tab icon is hidden (not removed) while ours is shown,
+   so disabling the feature restores it untouched */
+.autoicons-hidden {
+	display: none;
+}
+
+/* Inline title icons sit just above the title text */
+.autoicons-inline-icon {
+	font-size: 1.4em;
+}
+
+.autoicons-inline-icon svg {
+	width: 1.4em;
+	height: 1.4em;
+}
+
+/* Link icons inside reading view */
+.autoicons-link-icon {
+	margin-inline-end: var(--size-2-1);
 }
 
 /* Icon preview inside the fuzzy search suggestions */
