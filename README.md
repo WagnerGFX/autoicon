@@ -31,7 +31,7 @@ Icons are resolved for each file and folder in this priority order:
 
 ### Where icons appear
 
-Beyond the file explorer, icons also show in **tab headers**, next to **inline titles**, and on **internal links in reading view** — each surface can be toggled independently, and icon size is adjustable.
+Beyond the file explorer, icons also show in **tab headers**, next to **inline titles**, and on **internal links** (in both Live Preview and reading view) — each surface can be toggled independently, and icon size is adjustable.
 
 ### Emoji
 

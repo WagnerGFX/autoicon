@@ -134,8 +134,8 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						},
 					},
 					{
-						name: "Links in reading view",
-						desc: "Show the target note's icon on internal links. Applies to notes as they are (re)rendered.",
+						name: "Links in notes",
+						desc: "Show the target note's icon on internal links, in both Live Preview and reading view. Reading view updates as notes are (re)rendered.",
 						control: {
 							type: "toggle",
 							key: "linkIconsEnabled",
@@ -317,9 +317,9 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Links in reading view")
+			.setName("Links in notes")
 			.setDesc(
-				"Show the target note's icon on internal links. Applies to notes as they are (re)rendered."
+				"Show the target note's icon on internal links, in both Live Preview and reading view. Reading view updates as notes are (re)rendered."
 			)
 			.addToggle((toggle) =>
 				toggle

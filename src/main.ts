@@ -10,6 +10,7 @@ import {
 	WorkspaceLeaf,
 } from "obsidian";
 import { IconPickerModal } from "./icon-picker";
+import { createLinkIconExtension, refreshLinkIcons } from "./live-preview";
 import { isEmojiIcon, registerIconPacks, renderIconInto, unregisterIconPacks } from "./icon-packs";
 import {
 	AutoIconsSettings,
@@ -100,6 +101,7 @@ export default class AutoIconsPlugin extends Plugin {
 			})
 		);
 
+		// Reading view: post-process the rendered HTML.
 		this.registerMarkdownPostProcessor((el, ctx) => {
 			if (!this.settings.linkIconsEnabled) {
 				return;
@@ -125,6 +127,9 @@ export default class AutoIconsPlugin extends Plugin {
 				anchor.prepend(iconEl);
 			});
 		});
+
+		// Live Preview: a CodeMirror extension adds icon widgets to links.
+		this.registerEditorExtension(createLinkIconExtension(this));
 
 		this.app.workspace.onLayoutReady(() => {
 			this.attachToExplorers();
@@ -346,6 +351,7 @@ export default class AutoIconsPlugin extends Plugin {
 		this.applyExplorerIcons();
 		this.applyTabIcons();
 		this.applyInlineTitleIcons();
+		refreshLinkIcons(this.app);
 	}
 
 	private applyExplorerIcons() {
