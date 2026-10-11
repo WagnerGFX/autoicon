@@ -1,7 +1,8 @@
 import { App, editorInfoField, editorLivePreviewField, MarkdownView, parseLinktext } from "obsidian";
-import { RangeSetBuilder, StateEffect } from "@codemirror/state";
+import { Extension, RangeSetBuilder, StateEffect } from "@codemirror/state";
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
 import { renderIconInto } from "./icon-packs";
+import { linkIconPlacement } from "./link-icon-placement";
 import type AutoIconsPlugin from "./main";
 import type { ResolvedIcon } from "./main";
 
@@ -12,6 +13,10 @@ import type { ResolvedIcon } from "./main";
  * internal link on screen. CodeMirror owns that DOM, so injecting plain
  * elements by hand would get wiped on the next update; decorations are the
  * supported way to add visual elements.
+ *
+ * A widget at the edge of a link is always rendered *beside* the link's
+ * element, not inside it. To match Reading mode (icon inside the link), the
+ * rendered icon is then moved into the link element; see link-icon-placement.ts.
  */
 
 /** Dispatched to every editor to force a rebuild (settings or metadata changed). */
@@ -81,6 +86,10 @@ export function findLinks(line: string): LinkMatch[] {
 	return result;
 }
 
+/** Class names match those in main.ts / styles.css. */
+const LIVE_ICON_CLASS = "autoicons-icon autoicons-link-icon autoicons-live-icon";
+const LIVE_ICON_MARKER = "autoicons-live-icon";
+
 class LinkIconWidget extends WidgetType {
 	constructor(private readonly resolved: ResolvedIcon) {
 		super();
@@ -92,13 +101,21 @@ class LinkIconWidget extends WidgetType {
 	}
 
 	toDOM(): HTMLElement {
-		// Class names match those in main.ts / styles.css.
-		const el = createSpan({ cls: "autoicons-icon autoicons-link-icon autoicons-live-icon" });
+		const el = createSpan({ cls: LIVE_ICON_CLASS });
 		renderIconInto(el, this.resolved.icon);
 		if (this.resolved.color) {
 			el.style.color = this.resolved.color;
 		}
 		return el;
+	}
+
+	/**
+	 * The icon element gets moved inside the link's own element after it is
+	 * rendered (see link-icon-placement.ts), where CodeMirror's normal DOM
+	 * cleanup would not find it. Remove it explicitly when the widget goes away.
+	 */
+	destroy(dom: HTMLElement): void {
+		dom.remove();
 	}
 }
 
@@ -151,8 +168,8 @@ function buildDecorations(view: EditorView, plugin: AutoIconsPlugin): Decoration
 }
 
 /** The CodeMirror extension to pass to Plugin.registerEditorExtension(). */
-export function createLinkIconExtension(plugin: AutoIconsPlugin) {
-	return ViewPlugin.fromClass(
+export function createLinkIconExtension(plugin: AutoIconsPlugin): Extension {
+	const decorationsPlugin = ViewPlugin.fromClass(
 		class {
 			decorations: DecorationSet;
 
@@ -172,6 +189,7 @@ export function createLinkIconExtension(plugin: AutoIconsPlugin) {
 		},
 		{ decorations: (instance) => instance.decorations }
 	);
+	return [decorationsPlugin, linkIconPlacement(LIVE_ICON_MARKER)];
 }
 
 /**
