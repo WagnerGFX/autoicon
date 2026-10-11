@@ -5,7 +5,6 @@
 	align-items: center;
 	margin-inline-end: var(--size-2-2);
 	vertical-align: middle;
-	color: var(--icon-color);
 	/* emoji icons render as text */
 	font-size: var(--autoicons-icon-size, var(--icon-s));
 	line-height: 1;
