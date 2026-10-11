@@ -17,7 +17,10 @@ export type IconStyle = "lucide" | IconPackId;
 
 export interface AutoIconsSettings {
 	frontmatterEnabled: boolean;
+	/** Frontmatter property holding the icon. */
 	frontmatterProperty: string;
+	/** Frontmatter property holding the icon's hex color (only read when the icon property is valid). */
+	frontmatterColorProperty: string;
 	typeIconsEnabled: boolean;
 	activeIconStyle: IconStyle;
 	folderIconEnabled: boolean;
@@ -41,6 +44,7 @@ export const DEFAULT_ICON_SIZE = 16;
 export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	frontmatterEnabled: true,
 	frontmatterProperty: "icon",
+	frontmatterColorProperty: "color",
 	typeIconsEnabled: true,
 	activeIconStyle: "lucide",
 	folderIconEnabled: true,
@@ -170,6 +174,22 @@ export const MAIN_COLORS: string[] = [
 	"#8e24aa", // purple
 	"#d81b60", // pink
 ];
+
+const HEX_COLOR = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+/**
+ * Validates a frontmatter color value: a hex RGB or RGBA string such as
+ * "#3b82f6", "#3b82f66e", "#38f" or "#38f6". Returns the trimmed value ready
+ * to use as a CSS color, or null for anything else (non-strings, named colors,
+ * malformed hex), so a bad value never produces a broken style.
+ */
+export function parseHexColor(value: unknown): string | null {
+	if (typeof value !== "string") {
+		return null;
+	}
+	const trimmed = value.trim();
+	return HEX_COLOR.test(trimmed) ? trimmed : null;
+}
 
 export function colorForPath(path: string, palette: string[]): string {
 	const colors = palette.length > 0 ? palette : MAIN_COLORS;

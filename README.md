@@ -18,6 +18,17 @@ Icons are resolved for each file and folder in this priority order:
 
    The property name is configurable (default: `icon`). Emoji work too (`icon: 📚`), and `icon: none` hides the icon for that note entirely. Use the **Set icon for current file** command to pick an icon from a searchable list — the frontmatter is updated for you.
 
+   To color the icon, add a color property with a hex RGB or RGBA value (`#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`):
+
+   ```yaml
+   ---
+   icon: lucide-rocket
+   color: "#3b82f66e"
+   ---
+   ```
+
+   The color property name is configurable too (default: `color`). Quote the value — in YAML an unquoted `#` starts a comment. The color is only applied when the note also has a valid icon property; without an icon it is ignored. It takes priority over **Colorful icons**, and invalid values are ignored.
+
 3. **Custom rules** — assign icons automatically based on:
    - **Path starts with** — e.g. everything under `Projects/` gets a briefcase icon (applies to the folder and everything inside it)
    - **Extension is** — e.g. all `.excalidraw` files get a pencil icon
@@ -65,7 +76,7 @@ Both are also available by right-clicking any file or folder in the explorer.
 
 ## Settings
 
-- **Frontmatter icons** — toggle reading icons from frontmatter, and choose the property name.
+- **Frontmatter icons** — toggle reading icons from frontmatter, and choose the icon property name and the icon color property name.
 - **Default icons by file type** — toggle the built-in file type icons.
 - **Icon style** — choose which icon set (Lucide or a bundled pack) powers the automatic file-type, folder, and note icons.
 - **Icon size** — adjust icon size from 12 to 32 pixels.

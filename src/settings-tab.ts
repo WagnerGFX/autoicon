@@ -54,7 +54,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		return [
 			{
 				name: "Frontmatter icons",
-				desc: "Read the icon for a note from a frontmatter property. Frontmatter takes priority over rules and file type icons.",
+				desc: "Read the icon, and optionally its color, for a note from frontmatter properties. Frontmatter takes priority over rules and file type icons.",
 				control: {
 					type: "toggle",
 					key: "frontmatterEnabled",
@@ -62,13 +62,26 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				},
 			},
 			{
-				name: "Frontmatter property",
+				name: "Frontmatter icon property",
 				desc: 'Property name that holds the icon, e.g. "icon". Set the property to "none" in a note to hide its icon entirely.',
 				control: {
 					type: "text",
 					key: "frontmatterProperty",
 					defaultValue: "icon",
 					placeholder: "icon",
+					validate: (value: string) =>
+						value.trim() ? undefined : "Property name cannot be empty.",
+					disabled: () => !this.plugin.settings.frontmatterEnabled,
+				},
+			},
+			{
+				name: "Frontmatter icon color property",
+				desc: 'Property name that holds the icon color as a hex RGB or RGBA value, e.g. color: "#3b82f6" or "#3b82f66e". Only applied to notes that have a valid icon property.',
+				control: {
+					type: "text",
+					key: "frontmatterColorProperty",
+					defaultValue: "color",
+					placeholder: "color",
 					validate: (value: string) =>
 						value.trim() ? undefined : "Property name cannot be empty.",
 					disabled: () => !this.plugin.settings.frontmatterEnabled,
@@ -212,7 +225,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Frontmatter icons")
 			.setDesc(
-				"Read the icon for a note from a frontmatter property. Frontmatter takes priority over rules and file type icons."
+				"Read the icon, and optionally its color, for a note from frontmatter properties. Frontmatter takes priority over rules and file type icons."
 			)
 			.addToggle((toggle) =>
 				toggle
@@ -224,7 +237,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Frontmatter property")
+			.setName("Frontmatter icon property")
 			.setDesc(
 				'Property name that holds the icon, e.g. "icon". Set the property to "none" in a note to hide its icon entirely.'
 			)
@@ -234,6 +247,21 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.frontmatterProperty)
 					.onChange(async (value) => {
 						this.plugin.settings.frontmatterProperty = value.trim() || "icon";
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Frontmatter icon color property")
+			.setDesc(
+				'Property name that holds the icon color as a hex RGB or RGBA value, e.g. color: "#3b82f6" or "#3b82f66e". Only applied to notes that have a valid icon property.'
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("color")
+					.setValue(this.plugin.settings.frontmatterColorProperty)
+					.onChange(async (value) => {
+						this.plugin.settings.frontmatterColorProperty = value.trim() || "color";
 						await this.plugin.saveSettings();
 					})
 			);

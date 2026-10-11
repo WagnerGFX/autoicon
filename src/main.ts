@@ -17,6 +17,7 @@ import {
 	colorForPath,
 	DEFAULT_SETTINGS,
 	IconRule,
+	parseHexColor,
 	resolveCategoryIcon,
 	TYPE_ICONS,
 } from "./settings";
@@ -470,7 +471,8 @@ export default class AutoIconsPlugin extends Plugin {
 	/**
 	 * Priority: per-item icon (context menu), frontmatter (notes), custom
 	 * rules in order, then file-type / default icons. A frontmatter value of
-	 * "none" suppresses the icon entirely.
+	 * "none" suppresses the icon entirely. The frontmatter color property is
+	 * only honored together with a valid frontmatter icon.
 	 */
 	resolveItem(path: string, isFolder: boolean): ResolvedIcon | null {
 		const baseColor = this.settings.colorfulIconsEnabled
@@ -495,7 +497,12 @@ export default class AutoIconsPlugin extends Plugin {
 				}
 				const icon = this.resolveDisplayIcon(trimmed);
 				if (icon) {
-					return { icon, color: baseColor };
+					// The note has a usable icon, so its color property (if any)
+					// applies and wins over the colorful-icons palette.
+					const color = parseHexColor(
+						frontmatter?.[this.settings.frontmatterColorProperty]
+					);
+					return { icon, color: color ?? baseColor };
 				}
 			}
 		}
