@@ -1,16 +1,9 @@
 import { App, FuzzyMatch, FuzzySuggestModal, getIconIds } from "obsidian";
-import { ICON_PACKS, isEmojiIcon, packIdForIconId, renderIconInto } from "./icon-packs";
+import { isEmojiIcon, renderIconInto } from "./icons";
 
-const PACK_NAME_BY_ID = new Map(ICON_PACKS.map((pack) => [pack.id, pack.name]));
-
-/** Friendly label for an icon value, e.g. "folder — Material Symbols (Outlined)", "rocket", or "📚". */
+/** Friendly label for an icon value, e.g. "rocket" for "lucide-rocket", or "📚". */
 export function describeIconId(id: string): string {
-	const packId = packIdForIconId(id);
-	if (packId === null) {
-		return id.replace(/^lucide-/, "");
-	}
-	const name = id.slice(packId.length + 1);
-	return `${name} — ${PACK_NAME_BY_ID.get(packId)}`;
+	return id.replace(/^lucide-/, "");
 }
 
 /**

@@ -48,20 +48,7 @@ Beyond the file explorer, icons also show in **tab headers**, next to **inline t
 
 Anywhere an icon can go, an emoji can go instead: type or paste one into the icon picker and it appears as the first suggestion, or write it straight into frontmatter.
 
-All icons come from the icon set built into Obsidian ([Lucide](https://lucide.dev)) by default, so they automatically match your theme in both light and dark mode.
-
-### Icon packs & icon style
-
-Beyond Lucide, every icon picker (frontmatter, rules, default folder/note icon) can also search four bundled icon sets:
-
-- [Unicons](https://icon-sets.iconify.design/uil/) by Iconscout
-- [Unicons Monochrome](https://icon-sets.iconify.design/uim/) by Iconscout
-- [Cuida Icons](https://icon-sets.iconify.design/cuida/) by Sysvale
-- [Material Symbols (Outlined)](https://icon-sets.iconify.design/material-symbols/) by Google
-
-All four are bundled into the plugin at build time — nothing is downloaded at runtime, and the plugin makes no network requests.
-
-Pick one under **Settings → Icon style** to re-skin every automatic icon at once — all the per-extension file-type icons plus the default folder and note icons switch to that pack's equivalent. Frontmatter and custom rules are unaffected and can still use any icon from any pack regardless of this setting. If a pack doesn't have a suitable icon for a particular file type, that one falls back to the Lucide icon instead of showing nothing.
+All icons come from the icon set built into Obsidian ([Lucide](https://lucide.dev)), so they automatically match your theme in both light and dark mode.
 
 ### Colorful icons
 
@@ -78,7 +65,6 @@ Both are also available by right-clicking any file or folder in the explorer.
 
 - **Frontmatter icons** — toggle reading icons from frontmatter, and choose the icon property name and the icon color property name.
 - **Default icons by file type** — toggle the built-in file type icons.
-- **Icon style** — choose which icon set (Lucide or a bundled pack) powers the automatic file-type, folder, and note icons.
 - **Icon size** — adjust icon size from 12 to 32 pixels.
 - **Where icons appear** — toggle tab header, inline title, and reading-view link icons independently.
 - **Colorful icons** — toggle deterministic per-item coloring, and customize the palette.
@@ -110,8 +96,6 @@ npm run build   # type-check and produce a production build
 
 To test locally, clone this repository into `<your-vault>/.obsidian/plugins/autoicons/` and run `npm run dev`, then enable the plugin in Obsidian.
 
-`npm run dev`/`npm run build` first run `scripts/generate-icon-packs.mjs`, which reads the `@iconify-json/*` packages and writes bundle-ready icon data to `src/generated/` (gitignored, regenerated on every build).
-
 ### Releasing
 
 1. Run `npm version patch|minor|major` — this bumps `package.json`, `manifest.json`, and `versions.json`.
@@ -121,11 +105,3 @@ To test locally, clone this repository into `<your-vault>/.obsidian/plugins/auto
 ## License
 
 [MIT](LICENSE)
-
-## Third-party icons
-
-Bundled at build time, no network requests involved:
-
-- [Unicons](https://github.com/Iconscout/unicons) and [Unicons Monochrome](https://github.com/Iconscout/unicons) by Iconscout — Apache 2.0
-- [Cuida Icons](https://github.com/Sysvale/cuida-icons) by Sysvale — Apache 2.0
-- [Material Symbols](https://github.com/google/material-design-icons) by Google — Apache 2.0

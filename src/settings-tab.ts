@@ -6,14 +6,12 @@ import {
 } from "obsidian";
 import type AutoIconsPlugin from "./main";
 import { describeIconId, IconPickerModal } from "./icon-picker";
-import { ICON_PACKS, renderIconInto } from "./icon-packs";
+import { renderIconInto } from "./icons";
 import {
 	createRule,
 	DEFAULT_ICON_SIZE,
 	IconRule,
-	IconStyle,
 	MAIN_COLORS,
-	resolveCategoryIcon,
 	RuleMatchType,
 	RuleTarget,
 } from "./settings";
@@ -95,11 +93,6 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 					key: "typeIconsEnabled",
 					defaultValue: true,
 				},
-			},
-			{
-				name: "Icon style",
-				desc: "Choose which icon set powers the automatic file-type, folder, and note icons below. Frontmatter and custom rules can still use any icon from any pack, regardless of this setting.",
-				render: (setting) => this.renderIconStyle(setting),
 			},
 			{
 				name: "Default folder icon",
@@ -280,14 +273,6 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 					})
 			);
 
-		this.renderIconStyle(
-			new Setting(containerEl)
-				.setName("Icon style")
-				.setDesc(
-					"Choose which icon set powers the automatic file-type, folder, and note icons below. Frontmatter and custom rules can still use any icon from any pack, regardless of this setting."
-				)
-		);
-
 		this.renderFallbackIcon(
 			new Setting(containerEl)
 				.setName("Default folder icon")
@@ -422,30 +407,6 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 							this.refreshSettingsView();
 						})
 				);
-		});
-	}
-
-	/** Sets activeIconStyle and re-derives the folder/note default icons from it. */
-	private async applyIconStyle(style: IconStyle): Promise<void> {
-		const settings = this.plugin.settings;
-		settings.activeIconStyle = style;
-		settings.folderIcon = resolveCategoryIcon("folder", style);
-		settings.noteIcon = resolveCategoryIcon("document", style);
-		await this.plugin.saveSettings();
-	}
-
-	private renderIconStyle(setting: Setting) {
-		setting.addDropdown((dropdown) => {
-			dropdown.addOption("lucide", "Lucide (default)");
-			for (const pack of ICON_PACKS) {
-				dropdown.addOption(pack.id, pack.name);
-			}
-			dropdown
-				.setValue(this.plugin.settings.activeIconStyle)
-				.onChange(async (value) => {
-					await this.applyIconStyle(value as IconStyle);
-					this.refreshSettingsView();
-				});
 		});
 	}
 

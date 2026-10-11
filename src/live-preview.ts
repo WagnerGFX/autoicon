@@ -1,7 +1,7 @@
 import { App, editorInfoField, editorLivePreviewField, MarkdownView, parseLinktext } from "obsidian";
 import { Extension, RangeSetBuilder, StateEffect } from "@codemirror/state";
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
-import { renderIconInto } from "./icon-packs";
+import { renderIconInto } from "./icons";
 import { linkIconPlacement } from "./link-icon-placement";
 import type AutoIconsPlugin from "./main";
 import type { ResolvedIcon } from "./main";

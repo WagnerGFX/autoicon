@@ -11,7 +11,7 @@ import {
 } from "obsidian";
 import { IconPickerModal } from "./icon-picker";
 import { createLinkIconExtension, refreshLinkIcons } from "./live-preview";
-import { isEmojiIcon, registerIconPacks, renderIconInto, unregisterIconPacks } from "./icon-packs";
+import { isEmojiIcon, renderIconInto } from "./icons";
 import {
 	AutoIconsSettings,
 	colorForPath,
@@ -48,59 +48,9 @@ export default class AutoIconsPlugin extends Plugin {
 	private knownIconIds: Set<string> | null = null;
 
 	async onload() {
-		registerIconPacks();
 		await this.loadSettings();
 
 		this.addSettingTab(new AutoIconsSettingTab(this.app, this));
-
-		this.addCommand({
-			id: "set-icon",
-			name: "Set icon for current file",
-			checkCallback: (checking) => {
-				const file = this.app.workspace.getActiveFile();
-				if (!file) {
-					return false;
-				}
-				if (!checking) {
-					this.openIconPicker(file);
-				}
-				return true;
-			},
-		});
-
-		this.addCommand({
-			id: "remove-icon",
-			name: "Remove icon from current file",
-			checkCallback: (checking) => {
-				const file = this.app.workspace.getActiveFile();
-				if (!file || !this.hasExplicitIcon(file)) {
-					return false;
-				}
-				if (!checking) {
-					this.clearExplicitIcon(file);
-				}
-				return true;
-			},
-		});
-
-		this.registerEvent(
-			this.app.workspace.on("file-menu", (menu, file) => {
-				menu.addItem((item) =>
-					item
-						.setTitle("Set icon")
-						.setIcon("lucide-wand-sparkles")
-						.onClick(() => this.openIconPicker(file))
-				);
-				if (this.hasExplicitIcon(file)) {
-					menu.addItem((item) =>
-						item
-							.setTitle("Remove icon")
-							.setIcon("lucide-eraser")
-							.onClick(() => this.clearExplicitIcon(file))
-					);
-				}
-			})
-		);
 
 		// Reading view: post-process the rendered HTML.
 		this.registerMarkdownPostProcessor((el, ctx) => {
@@ -178,18 +128,36 @@ export default class AutoIconsPlugin extends Plugin {
 			.forEach((el) => el.remove());
 		this.clearTabIcons();
 		document.body.style.removeProperty("--autoicons-icon-size");
-		unregisterIconPacks();
 	}
 
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<AutoIconsSettings> | null;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+		this.migrateRemovedIconPacks();
 		if (!this.settings.customIcons || typeof this.settings.customIcons !== "object") {
 			this.settings.customIcons = {};
 		}
 		if (!Array.isArray(this.settings.colorPalette)) {
 			this.settings.colorPalette = [];
 		}
+	}
+
+	/**
+	 * The bundled icon packs (Unicons, Unicons Monochrome, Cuida, Material
+	 * Symbols) were removed. Default folder/note icons chosen from one of them
+	 * would no longer render, so reset those to the Lucide defaults and drop
+	 * the obsolete "icon style" setting. Icons set per note or per rule that
+	 * used a pack simply stop rendering until a new icon is chosen.
+	 */
+	private migrateRemovedIconPacks() {
+		const removedPack = /^(uil|uim|cuida|msout)-/;
+		if (removedPack.test(this.settings.folderIcon)) {
+			this.settings.folderIcon = DEFAULT_SETTINGS.folderIcon;
+		}
+		if (removedPack.test(this.settings.noteIcon)) {
+			this.settings.noteIcon = DEFAULT_SETTINGS.noteIcon;
+		}
+		delete (this.settings as unknown as Record<string, unknown>).activeIconStyle;
 	}
 
 	async saveSettings() {
@@ -547,7 +515,7 @@ export default class AutoIconsPlugin extends Plugin {
 					const category = TYPE_ICONS[parts.slice(i).join(".")];
 					if (category) {
 						return {
-							icon: resolveCategoryIcon(category, this.settings.activeIconStyle),
+							icon: resolveCategoryIcon(category),
 							color: baseColor,
 						};
 					}

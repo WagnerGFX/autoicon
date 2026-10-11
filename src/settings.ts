@@ -1,5 +1,3 @@
-import type { IconPackId } from "./icon-packs";
-
 export type RuleTarget = "file" | "folder" | "both";
 export type RuleMatchType = "path" | "extension" | "name" | "tag" | "regex";
 
@@ -13,8 +11,6 @@ export interface IconRule {
 	color?: string;
 }
 
-export type IconStyle = "lucide" | IconPackId;
-
 export interface AutoIconsSettings {
 	frontmatterEnabled: boolean;
 	/** Frontmatter property holding the icon. */
@@ -22,7 +18,6 @@ export interface AutoIconsSettings {
 	/** Frontmatter property holding the icon's hex color (only read when the icon property is valid). */
 	frontmatterColorProperty: string;
 	typeIconsEnabled: boolean;
-	activeIconStyle: IconStyle;
 	folderIconEnabled: boolean;
 	folderIcon: string;
 	noteIconEnabled: boolean;
@@ -46,7 +41,6 @@ export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	frontmatterProperty: "icon",
 	frontmatterColorProperty: "color",
 	typeIconsEnabled: true,
-	activeIconStyle: "lucide",
 	folderIconEnabled: true,
 	folderIcon: "lucide-folder",
 	noteIconEnabled: true,
@@ -89,71 +83,8 @@ const LUCIDE_CATEGORY_ICONS: Record<IconCategory, string> = {
 	folder: "folder",
 };
 
-/**
- * Bare (unprefixed) icon names within each bundled pack for each category.
- * Verified to exist in the generated pack data (see scripts/generate-icon-packs.mjs).
- * A pack that lacks a suitable icon for a category simply omits that key —
- * resolveCategoryIcon() then falls back to the Lucide icon for it.
- */
-const PACK_CATEGORY_ICONS: Record<IconPackId, Partial<Record<IconCategory, string>>> = {
-	uil: {
-		image: "image",
-		audio: "music",
-		video: "video",
-		document: "file-alt",
-		canvas: "dashboard",
-		drawing: "edit-alt",
-		list: "list-ul",
-		code: "code",
-		archive: "archive",
-		table: "table",
-		folder: "folder",
-	},
-	uim: {
-		image: "image-v",
-		document: "document-layout-center",
-		canvas: "apps",
-		list: "list-ul",
-		archive: "box",
-		table: "table",
-	},
-	cuida: {
-		image: "image-outline",
-		audio: "headphone-outline",
-		video: "videocam-outline",
-		document: "document-outline",
-		canvas: "dashboard-outline",
-		drawing: "edit-outline",
-		list: "list-outline",
-		archive: "box-outline",
-		table: "grid-outline",
-	},
-	msout: {
-		image: "image",
-		audio: "headphones",
-		video: "movie",
-		document: "description",
-		canvas: "dashboard",
-		drawing: "draw",
-		list: "list",
-		code: "code",
-		archive: "archive",
-		table: "table",
-		folder: "folder",
-	},
-};
-
-/**
- * Resolves a category to an icon id for the given active style, falling back
- * to Lucide. Also falls back for an unrecognized style value — e.g. stored
- * settings referencing a pack from a future version that no longer exists —
- * rather than throwing.
- */
-export function resolveCategoryIcon(category: IconCategory, style: IconStyle): string {
-	const name = PACK_CATEGORY_ICONS[style as IconPackId]?.[category];
-	if (name) {
-		return `${style}-${name}`;
-	}
+/** Resolves a category to its (Lucide) icon id. */
+export function resolveCategoryIcon(category: IconCategory): string {
 	return `lucide-${LUCIDE_CATEGORY_ICONS[category]}`;
 }
 
@@ -202,8 +133,7 @@ export function colorForPath(path: string, palette: string[]): string {
 
 /**
  * Category applied per file extension when "Default icons by file type" is
- * enabled. Resolved to an actual icon id via resolveCategoryIcon() using the
- * active icon style, so switching styles re-skins every one of these at once.
+ * enabled. Resolved to an actual icon id via resolveCategoryIcon().
  */
 export const TYPE_ICONS: Record<string, IconCategory> = {
 	png: "image",
