@@ -44,6 +44,28 @@ Icons are resolved for each file and folder in this priority order:
 
 Beyond the file explorer, icons also show in **tab headers**, next to **inline titles**, and on **internal links** (in both Live Preview and reading view) — each surface can be toggled independently, and icon size is adjustable.
 
+### Bases: the `autoicon()` formula function
+
+In [Bases](https://help.obsidian.md/bases), add a formula property that calls `autoicon()` and it renders the same icon (and color) the file would get anywhere else, using the full priority order above. Because it is an ordinary formula value rather than something injected into one particular view, any Bases view that renders formula properties can show it.
+
+```yaml
+formulas:
+  icon: autoicon()
+  folder_icon: autoicon(file.folder)
+  linked_icon: autoicon(note.project)
+```
+
+- `autoicon()` — the icon of the current row's file.
+- `autoicon(file.path)` — takes a vault path. It also accepts a file, a link (`file.asLink()`, a link property), or a folder path such as `file.folder`, which gives the folder's icon.
+- Relative or partial names are resolved like wikilinks, relative to the current row's note.
+- A missing property, an unknown path, or a path that has no icon produces an empty cell, so it composes with `if()`.
+
+Notes:
+
+- The function relies on an Obsidian formula-registration API that is not part of the official plugin API yet. If a future Obsidian version changes it, `autoicon()` may stop being available until the plugin is updated; everything else keeps working.
+- Cells are evaluated by Bases, so after changing your icon rules or settings you may need to reopen the base to see the new icons.
+- Unlike the built-in `icon()` function, `autoicon()` supports emoji and colors.
+
 ### Emoji
 
 Anywhere an icon can go, an emoji can go instead: type or paste one into the icon picker and it appears as the first suggestion, or write it straight into frontmatter.

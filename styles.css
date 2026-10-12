@@ -41,6 +41,12 @@
 	margin-inline-end: var(--size-2-1);
 }
 
+/* Icons returned by the autoicon() Bases formula function. Spacing between
+   adjacent values is left to the Bases view. */
+.autoicons-formula-icon {
+	margin-inline-end: 0;
+}
+
 /* Icon preview inside the fuzzy search suggestions */
 .autoicons-suggestion {
 	display: flex;

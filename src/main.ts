@@ -9,6 +9,7 @@ import {
 	TFile,
 	WorkspaceLeaf,
 } from "obsidian";
+import { registerAutoIconFormula } from "./formula";
 import { IconPickerModal } from "./icon-picker";
 import { createLinkIconExtension, refreshLinkIcons } from "./live-preview";
 import { isEmojiIcon, renderIconInto } from "./icons";
@@ -51,6 +52,9 @@ export default class AutoIconsPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.addSettingTab(new AutoIconsSettingTab(this.app, this));
+
+		// Bases: expose autoicon() as a formula function.
+		this.registerFormulaFunction();
 
 		// Reading view: post-process the rendered HTML.
 		this.registerMarkdownPostProcessor((el, ctx) => {
@@ -128,6 +132,24 @@ export default class AutoIconsPlugin extends Plugin {
 			.forEach((el) => el.remove());
 		this.clearTabIcons();
 		document.body.style.removeProperty("--autoicons-icon-size");
+	}
+
+	/**
+	 * Registers the autoicon() Bases formula function as early as possible so
+	 * bases restored at startup can already use it. If that fails (Bases not
+	 * initialized yet), retry once when the layout is ready.
+	 */
+	private registerFormulaFunction() {
+		if (registerAutoIconFormula(this)) {
+			return;
+		}
+		this.app.workspace.onLayoutReady(() => {
+			if (!registerAutoIconFormula(this)) {
+				console.warn(
+					"AutoIcons: the autoicon() Bases formula function is not available in this version of Obsidian."
+				);
+			}
+		});
 	}
 
 	async loadSettings() {
