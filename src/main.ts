@@ -459,12 +459,107 @@ export default class AutoIconsPlugin extends Plugin {
 	// ---------------------------------------------------------------- resolution
 
 	/**
-	 * Priority: per-item icon (context menu), frontmatter (notes), custom
-	 * rules in order, then file-type / default icons. A frontmatter value of
-	 * "none" suppresses the icon entirely. The frontmatter color property is
-	 * only honored together with a valid frontmatter icon.
+	 * Resolves the icon and color for a file or folder.
+	 *
+	 * Without color inheritance the item gets one icon from the first source
+	 * that has one (per-item icon, frontmatter, first matching rule, default),
+	 * and a color only from that same source or colorful icons. With color
+	 * inheritance on, icon and color are resolved independently; see
+	 * resolveInherited().
 	 */
 	resolveItem(path: string, isFolder: boolean): ResolvedIcon | null {
+		return this.settings.colorInheritanceEnabled
+			? this.resolveInherited(path, isFolder)
+			: this.resolveLegacy(path, isFolder);
+	}
+
+	/**
+	 * Inheriting resolution. The icon and the color are looked up separately,
+	 * each taking the first level that sets it:
+	 *
+	 *   icon:  per-item icon > frontmatter icon > rules > default icons
+	 *   color: frontmatter color > rules > colorful icons > none (theme color)
+	 *
+	 * Among rules, the first matching rule that sets an icon provides the icon
+	 * and the first matching rule that sets a color provides the color; they can
+	 * be different rules. A frontmatter icon of "none" still hides the icon
+	 * entirely. A color with no icon to put it on renders nothing.
+	 */
+	private resolveInherited(path: string, isFolder: boolean): ResolvedIcon | null {
+		const frontmatter =
+			!isFolder && this.settings.frontmatterEnabled
+				? this.app.metadataCache.getCache(path)?.frontmatter
+				: undefined;
+
+		// Icon: per-item icon, then frontmatter.
+		const custom = this.settings.customIcons[path];
+		let icon: string | null = custom ? this.resolveDisplayIcon(custom) : null;
+		if (!icon && frontmatter) {
+			const value: unknown = frontmatter[this.settings.frontmatterProperty];
+			if (typeof value === "string") {
+				const trimmed = value.trim();
+				if (trimmed.toLowerCase() === "none") {
+					return null;
+				}
+				icon = this.resolveDisplayIcon(trimmed);
+			}
+		}
+
+		// Color: frontmatter. Unlike the non-inheriting mode, it does not need
+		// a frontmatter icon next to it.
+		let color: string | null = frontmatter
+			? parseHexColor(frontmatter[this.settings.frontmatterColorProperty])
+			: null;
+
+		// Rules fill in whichever of icon and color is still unset.
+		if (!icon || !color) {
+			for (const rule of this.settings.rules) {
+				if (!rule.pattern) {
+					continue;
+				}
+				const ruleIcon = !icon && rule.icon ? this.resolveDisplayIcon(rule.icon) : null;
+				const ruleColor = !color && rule.color ? rule.color : null;
+				if (!ruleIcon && !ruleColor) {
+					continue;
+				}
+				if (rule.target === "file" && isFolder) {
+					continue;
+				}
+				if (rule.target === "folder" && !isFolder) {
+					continue;
+				}
+				if (!this.ruleMatches(rule, path, isFolder)) {
+					continue;
+				}
+				icon = icon ?? ruleIcon;
+				color = color ?? ruleColor;
+				if (icon && color) {
+					break;
+				}
+			}
+		}
+
+		// Defaults: file type / folder / note icon, and the colorful palette.
+		icon = icon ?? this.resolveDefaultIcon(path, isFolder);
+		if (!icon) {
+			return null;
+		}
+		if (!color && this.settings.colorfulIconsEnabled) {
+			color = colorForPath(path, this.settings.colorPalette);
+		}
+		return { icon, color };
+	}
+
+	/**
+	 * Original resolution, used while color inheritance is off. Priority: per-item
+	 * icon (context menu), frontmatter (notes), custom rules in order, then
+	 * file-type / default icons. The first source with an icon wins and brings
+	 * its own color (if it has one), falling back to the colorful-icons color.
+	 * A frontmatter value of "none" suppresses the icon entirely. The frontmatter
+	 * color property is only honored together with a valid frontmatter icon, and
+	 * a rule needs an icon to match.
+	 */
+	private resolveLegacy(path: string, isFolder: boolean): ResolvedIcon | null {
 		const baseColor = this.settings.colorfulIconsEnabled
 			? colorForPath(path, this.settings.colorPalette)
 			: null;
@@ -515,15 +610,22 @@ export default class AutoIconsPlugin extends Plugin {
 			}
 		}
 
+		const icon = this.resolveDefaultIcon(path, isFolder);
+		return icon ? { icon, color: baseColor } : null;
+	}
+
+	/**
+	 * The lowest-priority icon: the folder icon for folders, otherwise the
+	 * per-file-type icon, then the default note icon. Null when none applies
+	 * (or the relevant default is turned off).
+	 */
+	private resolveDefaultIcon(path: string, isFolder: boolean): string | null {
 		if (isFolder) {
 			if (
 				this.settings.folderIconEnabled &&
 				this.isKnownIcon(this.settings.folderIcon)
 			) {
-				return {
-					icon: this.resolveDisplayIcon(this.settings.folderIcon) ?? this.settings.folderIcon,
-					color: baseColor,
-				};
+				return this.resolveDisplayIcon(this.settings.folderIcon) ?? this.settings.folderIcon;
 			}
 			return null;
 		}
@@ -536,10 +638,7 @@ export default class AutoIconsPlugin extends Plugin {
 				for (let i = 1; i < parts.length; i++) {
 					const category = TYPE_ICONS[parts.slice(i).join(".")];
 					if (category) {
-						return {
-							icon: resolveCategoryIcon(category),
-							color: baseColor,
-						};
+						return resolveCategoryIcon(category);
 					}
 				}
 			}
@@ -550,10 +649,7 @@ export default class AutoIconsPlugin extends Plugin {
 			path.toLowerCase().endsWith(".md") &&
 			this.isKnownIcon(this.settings.noteIcon)
 		) {
-			return {
-				icon: this.resolveDisplayIcon(this.settings.noteIcon) ?? this.settings.noteIcon,
-				color: baseColor,
-			};
+			return this.resolveDisplayIcon(this.settings.noteIcon) ?? this.settings.noteIcon;
 		}
 
 		return null;

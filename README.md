@@ -27,7 +27,7 @@ Icons are resolved for each file and folder in this priority order:
    ---
    ```
 
-   The color property name is configurable too (default: `color`). Quote the value — in YAML an unquoted `#` starts a comment. The color is only applied when the note also has a valid icon property; without an icon it is ignored. It takes priority over **Colorful icons**, and invalid values are ignored.
+   The color property name is configurable too (default: `color`). Quote the value — in YAML an unquoted `#` starts a comment. By default the color is only applied when the note also has a valid icon property; without an icon it is ignored (with [Color inheritance](#color-inheritance) on, it applies on its own). It takes priority over **Colorful icons**, and invalid values are ignored.
 
 3. **Custom rules** — assign icons automatically based on:
    - **Path starts with** — e.g. everything under `Projects/` gets a briefcase icon (applies to the folder and everything inside it)
@@ -36,7 +36,7 @@ Icons are resolved for each file and folder in this priority order:
    - **Has tag** — e.g. every note tagged `#project` gets a briefcase icon (nested tags like `#project/web` match too)
    - **Path matches regex** — for advanced patterns
 
-   Each rule can target files, folders, or both, and can optionally assign a fixed color. Rules are checked top to bottom and the first match wins; rules can be reordered in settings.
+   Each rule can target files, folders, or both, and can optionally assign a fixed color. Rules are checked top to bottom and the first match wins; rules can be reordered in settings. With [Color inheritance](#color-inheritance) on, a rule may set just an icon or just a color, and the icon and the color are each taken from the first matching rule that sets them.
 
 4. **Default icons by file type** — images, audio, video, PDF, canvas, code, archives, and spreadsheets get a sensible icon out of the box. Can be turned off.
 
@@ -76,6 +76,26 @@ All icons come from the icon set built into Obsidian ([Lucide](https://lucide.de
 
 Turn on **Colorful icons** to give every file and folder a color from a palette (red, orange, yellow, green, teal, blue, purple, pink by default — every color is editable in settings), chosen deterministically from its path — the same item always gets the same color, so nothing shifts between reloads. Individual rules can override this with a fixed color of their own.
 
+### Color inheritance
+
+Turn on **Color inheritance** and the icon and its color are resolved separately, each from the first level that sets it:
+
+| | Icon | Color |
+| --- | --- | --- |
+| 1 | Frontmatter property (or per-item icon) | Frontmatter property |
+| 2 | Rules | Rules |
+| 3 | Default icons (folder, file type, note) | Colorful icons |
+| 4 | — | Default (theme color) |
+
+This means a rule can set an icon with no color (the color then comes from the next level, e.g. Colorful icons), or a color with no icon (the icon then comes from the next level, e.g. the default note icon). For example, with these rules:
+
+- `Path starts with Projects` → briefcase icon, no color
+- `Name contains meeting` → red, no icon
+
+`Projects/meeting.md` gets a **red briefcase**, `Notes/weekly meeting.md` gets the default note icon in **red**, and `Projects/plan.md` gets the briefcase in the Colorful icons color (or the theme color if that's off). Among rules, the icon and the color each come from the first matching rule that sets them, so they can come from different rules. In the rules list, use the eraser button to clear a rule's icon and the paint bucket to clear its color.
+
+With inheritance on, a note's frontmatter color applies even when the note has no icon property of its own. `icon: none` still hides the icon entirely, and a color never shows without an icon to put it on. With inheritance off (the default), the original behavior is unchanged: the first matching source supplies the icon, and a rule needs an icon to match.
+
 ## Commands
 
 - **Set icon for current file** — opens a fuzzy-searchable icon picker and writes the chosen icon to the note's frontmatter.
@@ -90,7 +110,8 @@ Both are also available by right-clicking any file or folder in the explorer.
 - **Icon size** — adjust icon size from 12 to 32 pixels.
 - **Where icons appear** — toggle tab header, inline title, and reading-view link icons independently.
 - **Colorful icons** — toggle deterministic per-item coloring, and customize the palette.
-- **Custom rules** — add, reorder, and delete rules; each rule has a target, a match type, a pattern, an icon chosen from a searchable picker, and an optional color.
+- **Color inheritance** — resolve icon and color independently so unset values fall through frontmatter → rules → colorful icons → default.
+- **Custom rules** — add, reorder, and delete rules; each rule has a target, a match type, a pattern, an icon chosen from a searchable picker, and an optional color (with color inheritance on, the icon is optional too).
 
 ## Installation
 

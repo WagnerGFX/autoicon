@@ -9,6 +9,7 @@ export interface IconRule {
 	icon: string;
 	/** Optional fixed color for icons this rule assigns; overrides colorful icons. */
 	color?: string;
+	// With color inheritance on, `icon` may be empty (the rule then only sets a color).
 }
 
 export interface AutoIconsSettings {
@@ -25,6 +26,11 @@ export interface AutoIconsSettings {
 	rules: IconRule[];
 	/** Per-item icons assigned via the context menu, keyed by vault path (folders and non-note files). */
 	customIcons: Record<string, string>;
+	/**
+	 * Resolve icon and color independently, each from the first level that sets
+	 * it: frontmatter > rules > colorful icons > default (icon) / none (color).
+	 */
+	colorInheritanceEnabled: boolean;
 	colorfulIconsEnabled: boolean;
 	colorPalette: string[];
 	tabIconsEnabled: boolean;
@@ -47,6 +53,7 @@ export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	noteIcon: "lucide-file-text",
 	rules: [],
 	customIcons: {},
+	colorInheritanceEnabled: false,
 	colorfulIconsEnabled: false,
 	colorPalette: [],
 	tabIconsEnabled: true,

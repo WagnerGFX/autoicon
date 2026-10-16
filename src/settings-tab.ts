@@ -16,6 +16,9 @@ import {
 	RuleTarget,
 } from "./settings";
 
+const COLOR_INHERITANCE_DESC =
+	"When a color is not set, inherit it from the next level: frontmatter property, then rules, then colorful icons, then no color. Icons are inherited the same way, so a rule can set only an icon or only a color.";
+
 export class AutoIconsSettingTab extends PluginSettingTab {
 	plugin: AutoIconsPlugin;
 
@@ -74,7 +77,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			},
 			{
 				name: "Frontmatter icon color property",
-				desc: 'Property name that holds the icon color as a hex RGB or RGBA value, e.g. color: "#3b82f6" or "#3b82f66e". Only applied to notes that have a valid icon property.',
+				desc: 'Property name that holds the icon color as a hex RGB or RGBA value, e.g. color: "#3b82f6" or "#3b82f66e". Only applied to notes that have a valid icon property, unless color inheritance is on.',
 				control: {
 					type: "text",
 					key: "frontmatterColorProperty",
@@ -155,6 +158,15 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				heading: "Colors",
 				items: [
 					{
+						name: "Color inheritance",
+						desc: COLOR_INHERITANCE_DESC,
+						control: {
+							type: "toggle",
+							key: "colorInheritanceEnabled",
+							defaultValue: false,
+						},
+					},
+					{
 						name: "Colorful icons",
 						desc: "Assign each file and folder a color from the palette below, based on its path. The color stays the same every time — it won't change on reload.",
 						control: {
@@ -175,7 +187,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				type: "list",
 				heading: "Rules",
 				emptyState:
-					"No rules yet. Add one to assign icons by path, extension, name, tag, or regex. Rules are checked top to bottom; the first match wins.",
+					"No rules yet. Add one to assign icons by path, extension, name, tag, or regex. Rules are checked top to bottom; the first match wins (with color inheritance on, the icon and the color each come from the first matching rule that sets them).",
 				addItem: {
 					name: "Add rule",
 					action: () => {
@@ -247,7 +259,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Frontmatter icon color property")
 			.setDesc(
-				'Property name that holds the icon color as a hex RGB or RGBA value, e.g. color: "#3b82f6" or "#3b82f66e". Only applied to notes that have a valid icon property.'
+				'Property name that holds the icon color as a hex RGB or RGBA value, e.g. color: "#3b82f6" or "#3b82f66e". Only applied to notes that have a valid icon property, unless color inheritance is on.'
 			)
 			.addText((text) =>
 				text
@@ -346,6 +358,18 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		new Setting(containerEl).setName("Colors").setHeading();
 
 		new Setting(containerEl)
+			.setName("Color inheritance")
+			.setDesc(COLOR_INHERITANCE_DESC)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.colorInheritanceEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.colorInheritanceEnabled = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
 			.setName("Colorful icons")
 			.setDesc(
 				"Assign each file and folder a color from the palette below, based on its path. The color stays the same every time — it won't change on reload."
@@ -368,7 +392,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		new Setting(containerEl).setName("Rules").setHeading();
 		new Setting(containerEl)
 			.setDesc(
-				"Rules are checked top to bottom; the first match wins. A path rule also applies to everything inside the matched folder."
+				"Rules are checked top to bottom; the first match wins (with color inheritance on, the icon and the color each come from the first matching rule that sets them). A path rule also applies to everything inside the matched folder."
 			)
 			.addButton((button) =>
 				button
@@ -463,13 +487,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 	private renderRule(setting: Setting, rule: IconRule) {
 		const preview = createSpan({ cls: "autoicons-rule-preview" });
 		setting.nameEl.appendChild(preview);
-		const previewIcon = this.plugin.resolveDisplayIcon(rule.icon);
-		if (previewIcon) {
-			renderIconInto(preview, previewIcon);
-			if (rule.color) {
-				preview.style.color = rule.color;
-			}
-		}
+		this.renderRulePreview(preview, rule);
 
 		setting
 			.addDropdown((dropdown) =>
@@ -520,6 +538,17 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 						}).open();
 					})
 			)
+			.addExtraButton((button) =>
+				button
+					.setIcon("eraser")
+					.setTooltip("Clear icon (color-only rule, needs color inheritance)")
+					.setDisabled(!rule.icon)
+					.onClick(() => {
+						rule.icon = "";
+						void this.plugin.saveSettings();
+						this.refreshSettingsView();
+					})
+			)
 			.addColorPicker((picker) =>
 				picker.setValue(rule.color ?? "#888888").onChange((value) => {
 					rule.color = value;
@@ -530,7 +559,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			.addExtraButton((button) =>
 				button
 					.setIcon("paint-bucket")
-					.setTooltip("Clear color (use colorful icons / theme default)")
+					.setTooltip("Clear color (inherit from colorful icons / theme default)")
 					.onClick(() => {
 						delete rule.color;
 						void this.plugin.saveSettings();
@@ -539,14 +568,29 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			);
 	}
 
+	/**
+	 * Draws the small preview next to a rule: its icon in its color. A rule with
+	 * a color but no icon (possible with color inheritance) gets a placeholder
+	 * swatch so the color is still visible.
+	 */
+	private renderRulePreview(preview: HTMLElement, rule: IconRule) {
+		preview.empty();
+		preview.style.removeProperty("color");
+		const icon =
+			this.plugin.resolveDisplayIcon(rule.icon) ?? (rule.color ? "lucide-circle" : null);
+		if (!icon) {
+			return;
+		}
+		renderIconInto(preview, icon);
+		if (rule.color) {
+			preview.style.color = rule.color;
+		}
+	}
+
 	private updatePreviewColor(setting: Setting, rule: IconRule) {
 		const preview = setting.nameEl.querySelector<HTMLElement>(".autoicons-rule-preview");
 		if (preview) {
-			if (rule.color) {
-				preview.style.color = rule.color;
-			} else {
-				preview.style.removeProperty("color");
-			}
+			this.renderRulePreview(preview, rule);
 		}
 	}
 }
