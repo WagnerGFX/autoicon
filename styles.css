@@ -57,12 +57,189 @@
 	color: var(--icon-color);
 }
 
-/* Icon preview next to a rule in settings */
+/* ---------------------------------------------------------------------------
+   Rules in settings
+
+   A rule is a compact card:
+
+     [#][preview]  [target v] [match type v] [pattern ........]   [x][=]
+                   [icon ............][clear] [color][clear]
+
+   Obsidian renders a setting as a flex row whose controls can neither wrap nor
+   shrink, so a rule with many controls overflowed the pane. Here the item is a
+   grid (badge | body | row buttons) and the body is built from wrapping flex
+   groups: "when" (what to match) and "then" (icon and color). Groups wrap onto
+   a second line as the pane narrows, and every control can shrink below its
+   preferred size, so nothing is pushed out of view or squished away.
+   --------------------------------------------------------------------------- */
+.setting-item.autoicons-rule {
+	display: grid;
+	/* badge | body | any further buttons (Obsidian's delete and drag handle) */
+	grid-template-columns: auto minmax(0, 1fr);
+	grid-template-rows: auto;
+	grid-auto-flow: column;
+	grid-auto-columns: auto;
+	align-items: start;
+	column-gap: var(--size-4-2);
+	padding-block: var(--size-4-3);
+}
+
+.setting-item.autoicons-rule > .setting-item-icon {
+	display: none;
+}
+
+/* The control wrapper is flattened so its children (our body, plus the buttons
+   Obsidian appends) take part in the item's grid directly. */
+.setting-item.autoicons-rule > .setting-item-control {
+	display: contents;
+}
+
+.setting-item.autoicons-rule > .setting-item-info,
+.setting-item.autoicons-rule > .setting-item-control > * {
+	grid-row: 1;
+}
+
+.setting-item.autoicons-rule > .setting-item-info {
+	grid-column: 1;
+	margin: 0;
+	min-width: 0;
+}
+
+.setting-item.autoicons-rule .setting-item-description:empty {
+	display: none;
+}
+
+.setting-item.autoicons-rule > .setting-item-control > .autoicons-rule-body {
+	grid-column: 2;
+}
+
+/* Badge: rule number and a preview of the icon/color it produces. Never
+   shrinks, so it stays visible at any width. */
+.setting-item.autoicons-rule .setting-item-name {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-3);
+	min-height: var(--input-height, 30px);
+	white-space: nowrap;
+}
+
+.autoicons-rule-number {
+	min-width: 2ch;
+	text-align: end;
+	font-variant-numeric: tabular-nums;
+	color: var(--text-muted);
+}
+
 .autoicons-rule-preview {
 	display: inline-flex;
 	align-items: center;
-	margin-inline-start: var(--size-4-2);
+	justify-content: center;
+	min-width: var(--icon-s, 18px);
 	color: var(--icon-color);
+}
+
+/* Delete and drag handle sit beside the first line, aligned with its controls. */
+.setting-item.autoicons-rule > .setting-item-control > .extra-setting-button:not(.autoicons-rule-action) {
+	align-self: start;
+	min-height: var(--input-height, 30px);
+	box-sizing: border-box;
+}
+
+/* Body: the "when" and "then" groups share a line when there is room and stack
+   when there is not. */
+.autoicons-rule-body,
+.autoicons-rule-when,
+.autoicons-rule-then,
+.autoicons-rule-pair {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-4-2);
+	min-width: 0;
+}
+
+.autoicons-rule-body {
+	/* wrap the two groups, but keep row spacing tight */
+	row-gap: var(--size-4-2);
+}
+
+.autoicons-rule-when {
+	flex: 1 1 28rem;
+}
+
+.autoicons-rule-then {
+	flex: 0 1 auto;
+	max-width: 100%;
+}
+
+/* An icon (or color) and its "clear" button never separate. */
+.autoicons-rule-pair {
+	flex-wrap: nowrap;
+	gap: var(--size-2-2);
+}
+
+.autoicons-rule-icon-pair {
+	flex: 0 1 auto;
+	max-width: 100%;
+}
+
+.autoicons-rule-color-pair {
+	flex: 0 0 auto;
+}
+
+/* Controls: override the widths Obsidian gives them (including the dropdowns'
+   measured "fitted" width) so they share the line and shrink as needed. */
+.setting-item.autoicons-rule .autoicons-rule-when select.dropdown:not(.is-measuring) {
+	/* Start from the width Obsidian measured for the selected label (so a longer
+	   label gets more room), and only truncate when the line is out of space. */
+	flex: 0 1 var(--dropdown-fitted-width, auto);
+	width: auto;
+	min-width: 0;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Measuring clones must not take part in layout. */
+.setting-item.autoicons-rule select.dropdown.is-measuring {
+	position: absolute;
+	visibility: hidden;
+	pointer-events: none;
+}
+
+.setting-item.autoicons-rule .autoicons-rule-when input.autoicons-rule-pattern {
+	flex: 1 1 8rem;
+	width: auto;
+	min-width: 0;
+}
+
+/* Fixed width, so every rule's icon button lines up and a long icon name is
+   truncated instead of growing the row. */
+.setting-item.autoicons-rule .autoicons-rule-icon-button {
+	flex: 0 1 auto;
+	width: 11rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.autoicons-rule-icon-label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.autoicons-rule-icon-button.is-empty {
+	color: var(--text-muted);
+}
+
+.setting-item.autoicons-rule .autoicons-rule-action,
+.setting-item.autoicons-rule .autoicons-rule-color-pair input[type="color"] {
+	flex: 0 0 auto;
 }
 
 /* Link icons inside the Live Preview editor (CodeMirror widget) */

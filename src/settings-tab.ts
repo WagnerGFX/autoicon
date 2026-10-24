@@ -1,8 +1,13 @@
 import {
 	App,
+	ButtonComponent,
+	ColorComponent,
+	DropdownComponent,
+	ExtraButtonComponent,
 	PluginSettingTab,
 	Setting,
 	SettingDefinitionItem,
+	TextComponent,
 } from "obsidian";
 import type AutoIconsPlugin from "./main";
 import { describeIconId, IconPickerModal } from "./icon-picker";
@@ -210,7 +215,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 				},
 				items: this.plugin.settings.rules.map((rule, index) => ({
 					name: `Rule ${index + 1}`,
-					render: (setting: Setting) => this.renderRule(setting, rule),
+					render: (setting: Setting) => this.renderRule(setting, rule, index),
 				})),
 			},
 		];
@@ -407,7 +412,7 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 
 		this.plugin.settings.rules.forEach((rule, index) => {
 			const setting = new Setting(containerEl).setName(`Rule ${index + 1}`);
-			this.renderRule(setting, rule);
+			this.renderRule(setting, rule, index);
 			setting
 				.addExtraButton((button) =>
 					button
@@ -484,88 +489,127 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 		);
 	}
 
-	private renderRule(setting: Setting, rule: IconRule) {
-		const preview = createSpan({ cls: "autoicons-rule-preview" });
-		setting.nameEl.appendChild(preview);
+	/**
+	 * Lays a rule out as a compact two-part card instead of one long row:
+	 *
+	 *   [#][preview]  [target v] [match type v] [pattern ........]   [x][=]
+	 *                 [icon ............][clear] [color][clear]
+	 *
+	 * Everything is built inside our own wrapper elements (see styles.css), which
+	 * wrap and shrink, so the rule never overflows the settings pane however
+	 * narrow it gets or however long a label or icon name is. Obsidian's own
+	 * delete and drag-handle buttons are appended to the control element after
+	 * this runs and are positioned by the same stylesheet.
+	 */
+	private renderRule(setting: Setting, rule: IconRule, index: number) {
+		const { settingEl, nameEl, controlEl } = setting;
+		settingEl.addClass("autoicons-rule");
+
+		// Leading badge: rule number (its priority) and a preview of the result.
+		nameEl.empty();
+		nameEl.setAttr(
+			"title",
+			`Rule ${index + 1}. Rules are checked top to bottom; the first match wins.`
+		);
+		nameEl.createSpan({ cls: "autoicons-rule-number", text: String(index + 1) });
+		const preview = nameEl.createSpan({ cls: "autoicons-rule-preview" });
 		this.renderRulePreview(preview, rule);
 
-		setting
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOptions({
-						both: "Files and folders",
-						file: "Files only",
-						folder: "Folders only",
-					})
-					.setValue(rule.target)
-					.onChange((value) => {
-						rule.target = value as RuleTarget;
-						void this.plugin.saveSettings();
-					})
-			)
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOptions({
-						path: "Path starts with",
-						extension: "Extension is",
-						name: "Name contains",
-						tag: "Has tag",
-						regex: "Path matches regex",
-					})
-					.setValue(rule.matchType)
-					.onChange((value) => {
-						rule.matchType = value as RuleMatchType;
-						void this.plugin.saveSettings();
-					})
-			)
-			.addText((text) =>
-				text
-					.setPlaceholder("Pattern")
-					.setValue(rule.pattern)
-					.onChange((value) => {
-						rule.pattern = value;
-						void this.plugin.saveSettings();
-					})
-			)
-			.addButton((button) =>
-				button
-					.setButtonText(rule.icon ? describeIconId(rule.icon) : "Pick icon")
-					.onClick(() => {
-						new IconPickerModal(this.app, (icon) => {
-							rule.icon = icon;
-							void this.plugin.saveSettings();
-							this.refreshSettingsView();
-						}).open();
-					})
-			)
-			.addExtraButton((button) =>
-				button
-					.setIcon("eraser")
-					.setTooltip("Clear icon (color-only rule, needs color inheritance)")
-					.setDisabled(!rule.icon)
-					.onClick(() => {
-						rule.icon = "";
-						void this.plugin.saveSettings();
-						this.refreshSettingsView();
-					})
-			)
-			.addColorPicker((picker) =>
-				picker.setValue(rule.color ?? "#888888").onChange((value) => {
-					rule.color = value;
-					void this.plugin.saveSettings();
-					this.updatePreviewColor(setting, rule);
-				})
-			)
-			.addExtraButton((button) =>
-				button
-					.setIcon("paint-bucket")
-					.setTooltip("Clear color (inherit from colorful icons / theme default)")
-					.onClick(() => {
-						delete rule.color;
-						void this.plugin.saveSettings();
-						this.refreshSettingsView();
-					})
-			);
+		const body = controlEl.createDiv({ cls: "autoicons-rule-body" });
+		// "When": what the rule matches.
+		const when = body.createDiv({ cls: "autoicons-rule-when" });
+		// "Then": what the rule applies.
+		const then = body.createDiv({ cls: "autoicons-rule-then" });
+
+		const target = new DropdownComponent(when)
+			.addOptions({
+				both: "Files and folders",
+				file: "Files only",
+				folder: "Folders only",
+			})
+			.setValue(rule.target)
+			.onChange((value) => {
+				rule.target = value as RuleTarget;
+				void this.plugin.saveSettings();
+				labelSelect(target);
+			});
+		labelSelect(target);
+
+		const matchType = new DropdownComponent(when)
+			.addOptions({
+				path: "Path starts with",
+				extension: "Extension is",
+				name: "Name contains",
+				tag: "Has tag",
+				regex: "Path matches regex",
+			})
+			.setValue(rule.matchType)
+			.onChange((value) => {
+				rule.matchType = value as RuleMatchType;
+				void this.plugin.saveSettings();
+				labelSelect(matchType);
+			});
+		labelSelect(matchType);
+
+		const pattern = new TextComponent(when)
+			.setPlaceholder("Pattern")
+			.setValue(rule.pattern)
+			.onChange((value) => {
+				rule.pattern = value;
+				void this.plugin.saveSettings();
+			});
+		pattern.inputEl.addClass("autoicons-rule-pattern");
+
+		// Icon: a fixed-size button whose label is truncated, so picking a long
+		// icon name can no longer push the other controls out of the row.
+		const iconPair = then.createDiv({ cls: "autoicons-rule-pair autoicons-rule-icon-pair" });
+		const iconName = rule.icon ? describeIconId(rule.icon) : "";
+		const iconButton = new ButtonComponent(iconPair).onClick(() => {
+			new IconPickerModal(this.app, (icon) => {
+				rule.icon = icon;
+				void this.plugin.saveSettings();
+				this.refreshSettingsView();
+			}).open();
+		});
+		iconButton.buttonEl.addClass("autoicons-rule-icon-button");
+		iconButton.buttonEl.toggleClass("is-empty", !iconName);
+		iconButton.buttonEl.createSpan({
+			cls: "autoicons-rule-icon-label",
+			text: iconName || "Pick icon",
+		});
+		iconButton.buttonEl.setAttr("title", iconName ? `Icon: ${iconName}` : "Pick an icon");
+		iconButton.buttonEl.setAttr("aria-label", iconName ? `Icon: ${iconName}` : "Pick an icon");
+
+		const clearIcon = new ExtraButtonComponent(iconPair)
+			.setIcon("eraser")
+			.setTooltip("Clear icon (color-only rule, needs color inheritance)")
+			.setDisabled(!rule.icon)
+			.onClick(() => {
+				rule.icon = "";
+				void this.plugin.saveSettings();
+				this.refreshSettingsView();
+			});
+		clearIcon.extraSettingsEl.addClass("autoicons-rule-action");
+
+		// Color.
+		const colorPair = then.createDiv({ cls: "autoicons-rule-pair autoicons-rule-color-pair" });
+		new ColorComponent(colorPair)
+			.setValue(rule.color ?? "#888888")
+			.onChange((value) => {
+				rule.color = value;
+				void this.plugin.saveSettings();
+				this.updatePreviewColor(setting, rule);
+			});
+
+		const clearColor = new ExtraButtonComponent(colorPair)
+			.setIcon("paint-bucket")
+			.setTooltip("Clear color (inherit from colorful icons / theme default)")
+			.onClick(() => {
+				delete rule.color;
+				void this.plugin.saveSettings();
+				this.refreshSettingsView();
+			});
+		clearColor.extraSettingsEl.addClass("autoicons-rule-action");
 	}
 
 	/**
@@ -593,4 +637,14 @@ export class AutoIconsSettingTab extends PluginSettingTab {
 			this.renderRulePreview(preview, rule);
 		}
 	}
+}
+
+/**
+ * Mirrors a dropdown's selected label into its tooltip. A narrow rule may have
+ * to truncate the text shown in the dropdown, so the full label stays
+ * available on hover.
+ */
+function labelSelect(dropdown: DropdownComponent): void {
+	const label = dropdown.selectEl.selectedOptions[0]?.text ?? "";
+	dropdown.selectEl.setAttr("title", label);
 }
