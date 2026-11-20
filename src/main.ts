@@ -5,12 +5,9 @@ import {
 	MarkdownView,
 	normalizePath,
 	Plugin,
-	TAbstractFile,
-	TFile,
 	WorkspaceLeaf,
 } from "obsidian";
 import { registerAutoIconFormula } from "./formula";
-import { IconPickerModal } from "./icon-picker";
 import { createLinkIconExtension, refreshLinkIcons } from "./live-preview";
 import { isEmojiIcon, renderIconInto } from "./icons";
 import {
@@ -155,31 +152,12 @@ export default class AutoIconsPlugin extends Plugin {
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<AutoIconsSettings> | null;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-		this.migrateRemovedIconPacks();
 		if (!this.settings.customIcons || typeof this.settings.customIcons !== "object") {
 			this.settings.customIcons = {};
 		}
 		if (!Array.isArray(this.settings.colorPalette)) {
 			this.settings.colorPalette = [];
 		}
-	}
-
-	/**
-	 * The bundled icon packs (Unicons, Unicons Monochrome, Cuida, Material
-	 * Symbols) were removed. Default folder/note icons chosen from one of them
-	 * would no longer render, so reset those to the Lucide defaults and drop
-	 * the obsolete "icon style" setting. Icons set per note or per rule that
-	 * used a pack simply stop rendering until a new icon is chosen.
-	 */
-	private migrateRemovedIconPacks() {
-		const removedPack = /^(uil|uim|cuida|msout)-/;
-		if (removedPack.test(this.settings.folderIcon)) {
-			this.settings.folderIcon = DEFAULT_SETTINGS.folderIcon;
-		}
-		if (removedPack.test(this.settings.noteIcon)) {
-			this.settings.noteIcon = DEFAULT_SETTINGS.noteIcon;
-		}
-		delete (this.settings as unknown as Record<string, unknown>).activeIconStyle;
 	}
 
 	async saveSettings() {
@@ -199,55 +177,7 @@ export default class AutoIconsPlugin extends Plugin {
 	}
 
 	// ---------------------------------------------------------------- explicit icons
-
-	/** Opens the icon picker and stores the choice: frontmatter for notes, settings for everything else. */
-	openIconPicker(file: TAbstractFile) {
-		new IconPickerModal(this.app, (icon) => {
-			if (file instanceof TFile && file.extension === "md") {
-				void this.app.fileManager.processFrontMatter(
-					file,
-					(frontmatter: Record<string, unknown>) => {
-						frontmatter[this.settings.frontmatterProperty] = icon;
-					}
-				);
-			} else {
-				this.settings.customIcons[file.path] = icon;
-				void this.saveSettings();
-			}
-		}).open();
-	}
-
-	/** True when the item has an icon assigned directly (frontmatter or context menu). */
-	hasExplicitIcon(file: TAbstractFile): boolean {
-		if (this.settings.customIcons[file.path]) {
-			return true;
-		}
-		if (file instanceof TFile && file.extension === "md") {
-			const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-			return frontmatter?.[this.settings.frontmatterProperty] !== undefined;
-		}
-		return false;
-	}
-
-	clearExplicitIcon(file: TAbstractFile) {
-		if (this.settings.customIcons[file.path]) {
-			delete this.settings.customIcons[file.path];
-			void this.saveSettings();
-		}
-		if (file instanceof TFile && file.extension === "md") {
-			const property = this.settings.frontmatterProperty;
-			const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-			if (frontmatter?.[property] !== undefined) {
-				void this.app.fileManager.processFrontMatter(
-					file,
-					(fm: Record<string, unknown>) => {
-						delete fm[property];
-					}
-				);
-			}
-		}
-	}
-
+	
 	/** Re-keys custom icons when an item (or a folder with children) is renamed or moved. */
 	private moveCustomIcons(newPath: string, oldPath: string) {
 		const icons = this.settings.customIcons;
@@ -412,7 +342,7 @@ export default class AutoIconsPlugin extends Plugin {
 		});
 	}
 
-	/** Shows the note's icon before the inline title inside open markdown views. */
+	/** Shows the note's icon before the inline title inside open Markdown views. */
 	private applyInlineTitleIcons() {
 		this.app.workspace.iterateAllLeaves((leaf) => {
 			if (!(leaf.view instanceof MarkdownView) || !leaf.view.file) {
