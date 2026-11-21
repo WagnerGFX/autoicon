@@ -24,8 +24,6 @@ export interface AutoIconsSettings {
 	noteIconEnabled: boolean;
 	noteIcon: string;
 	rules: IconRule[];
-	/** Per-item icons assigned via the context menu, keyed by vault path (folders and non-note files). */
-	customIcons: Record<string, string>;
 	/**
 	 * Resolve icon and color independently, each from the first level that sets
 	 * it: frontmatter > rules > colorful icons > default (icon) / none (color).
@@ -52,7 +50,6 @@ export const DEFAULT_SETTINGS: AutoIconsSettings = {
 	noteIconEnabled: true,
 	noteIcon: "lucide-file-text",
 	rules: [],
-	customIcons: {},
 	colorInheritanceEnabled: false,
 	colorfulIconsEnabled: false,
 	colorPalette: [],

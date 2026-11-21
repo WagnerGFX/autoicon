@@ -30,12 +30,11 @@ Obsidian community plugin written in TypeScript. Code, comments, docs, and commi
 - The settings UI has two implementations: declarative `getSettingDefinitions()` and a `display()` fallback for older Obsidian. A new setting needs an entry in `AutoIconsSettings`, `DEFAULT_SETTINGS`, and both UI paths.
 - Always validate icon values through `resolveDisplayIcon`/`isKnownIcon` (accepts `lucide-*` ids, normalizes bare names, allows emoji). Injecting an icon that cannot render makes the file-explorer MutationObserver loop forever.
 - Explorer icons are re-applied by a debounced `scheduleRefresh()` (100 ms) because Obsidian re-renders the explorer DOM. Avoid synchronous full repaints on vault/workspace events.
-- Storage split: note icons live in frontmatter; per-item icons for folders and non-markdown files live in `settings.customIcons` keyed by vault path. Rename/delete handlers re-key and remove those entries.
+- Scope: the plugin only renders icons (tabs, links, Bases) and set icon rules. Assigning icons to notes or adding new icons to Obsidian are handled by other plugins: note icons come from frontmatter, or rules defined in settings.
 - Several integrations use undocumented APIs and are feature-detected for a reason: `leaf.tabHeaderInnerIconEl`, `editor.cm`, CodeMirror `view.observer`, and `Plugin.registerGlobalFunc`. Keep them guarded; never touch `IconValue` at module top level (it is created lazily so importing `formula.ts` does not throw when Bases is absent).
 - `obsidian` typings are `latest` while `manifest.json` declares `minAppVersion` 1.13.0. Newer APIs must remain optional and guarded at runtime.
 - Obsidian DOM helpers (`createSpan`, `createDiv`, etc.) are globals; do not import them.
 - `styles.css` holds all styling; keep `autoicons-*` class names and the `--autoicons-icon-size` variable in sync with the TS code.
-- README documents "Set icon" commands and an explorer context menu, but no command or `file-menu` registration exists in `src/`. Treat that part of the README as intent, not current behavior.
 
 ## Local testing
 The plugin only runs inside Obsidian: clone the repo into `<vault>/.obsidian/plugins/autoicons/`, run `npm install && npm run dev`, then enable it in Settings → Community plugins. Its saved state is `data.json` (gitignored).

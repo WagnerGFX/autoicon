@@ -6,9 +6,7 @@ An [Obsidian](https://obsidian.md) plugin that automatically adds icons to files
 
 Icons are resolved for each file and folder in this priority order:
 
-1. **Per-item icons** — right-click any file or folder in the explorer and choose **Set icon**. Notes store the icon in frontmatter; folders and other files are remembered by the plugin (and follow the item through renames and moves).
-
-2. **Frontmatter icons** — give any note an icon by adding a property to its frontmatter:
+1. **Frontmatter icons** — give any note an icon by adding a property to its frontmatter:
 
    ```yaml
    ---
@@ -16,7 +14,7 @@ Icons are resolved for each file and folder in this priority order:
    ---
    ```
 
-   The property name is configurable (default: `icon`). Emoji work too (`icon: 📚`), and `icon: none` hides the icon for that note entirely. Use the **Set icon for current file** command to pick an icon from a searchable list — the frontmatter is updated for you.
+   The property name is configurable (default: `icon`). Emoji work too (`icon: 📚`), and `icon: none` hides the icon for that note entirely.
 
    To color the icon, add a color property with a hex RGB or RGBA value (`#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`):
 
@@ -29,7 +27,7 @@ Icons are resolved for each file and folder in this priority order:
 
    The color property name is configurable too (default: `color`). Quote the value — in YAML an unquoted `#` starts a comment. By default the color is only applied when the note also has a valid icon property; without an icon it is ignored (with [Color inheritance](#color-inheritance) on, it applies on its own). It takes priority over **Colorful icons**, and invalid values are ignored.
 
-3. **Custom rules** — assign icons automatically based on:
+2. **Custom rules** — assign icons automatically based on:
    - **Path starts with** — e.g. everything under `Projects/` gets a briefcase icon (applies to the folder and everything inside it)
    - **Extension is** — e.g. all `.excalidraw` files get a pencil icon
    - **Name contains** — e.g. anything with "meeting" in the name gets a calendar icon
@@ -38,7 +36,9 @@ Icons are resolved for each file and folder in this priority order:
 
    Each rule can target files, folders, or both, and can optionally assign a fixed color. Rules are checked top to bottom and the first match wins; rules can be reordered in settings. With [Color inheritance](#color-inheritance) on, a rule may set just an icon or just a color, and the icon and the color are each taken from the first matching rule that sets them.
 
-4. **Default icons by file type** — images, audio, video, PDF, canvas, code, archives, and spreadsheets get a sensible icon out of the box. Can be turned off.
+3. **Default icons by file type** — images, audio, video, PDF, canvas, code, archives, and spreadsheets get a sensible icon out of the box. Can be turned off.
+
+AutoIcons only renders icons; it does not provide commands or menus to assign them. Icons are set in frontmatter, or by any other plugin that writes it.
 
 ### Where icons appear
 
@@ -82,7 +82,7 @@ Turn on **Color inheritance** and the icon and its color are resolved separately
 
 | | Icon | Color |
 | --- | --- | --- |
-| 1 | Frontmatter property (or per-item icon) | Frontmatter property |
+| 1 | Frontmatter property | Frontmatter property |
 | 2 | Rules | Rules |
 | 3 | Default icons (folder, file type, note) | Colorful icons |
 | 4 | — | Default (theme color) |
@@ -96,20 +96,13 @@ This means a rule can set an icon with no color (the color then comes from the n
 
 With inheritance on, a note's frontmatter color applies even when the note has no icon property of its own. `icon: none` still hides the icon entirely, and a color never shows without an icon to put it on. With inheritance off (the default), the original behavior is unchanged: the first matching source supplies the icon, and a rule needs an icon to match.
 
-## Commands
-
-- **Set icon for current file** — opens a fuzzy-searchable icon picker and writes the chosen icon to the note's frontmatter.
-- **Remove icon from current file** — removes the note's icon (frontmatter or per-item).
-
-Both are also available by right-clicking any file or folder in the explorer.
-
 ## Settings
 
 - **Frontmatter icons** — toggle reading icons from frontmatter, and choose the icon property name and the icon color property name.
 - **Default icons by file type** — toggle the built-in file type icons.
 - **Icon size** — adjust icon size from 12 to 32 pixels.
-- **Where icons appear** — toggle tab header, inline title, and reading-view link icons independently.
-- **Colorful icons** — toggle deterministic per-item coloring, and customize the palette.
+- **Where icons appear** — toggle tab header, inline title, and link icons independently.
+- **Colorful icons** — toggle deterministic per-file and per-folder coloring, and customize the palette.
 - **Color inheritance** — resolve icon and color independently so unset values fall through frontmatter → rules → colorful icons → default.
 - **Custom rules** — add, reorder, and delete rules; each rule has a target, a match type, a pattern, an icon chosen from a searchable picker, and an optional color (with color inheritance on, the icon is optional too).
 

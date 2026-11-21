@@ -104,18 +104,8 @@ export default class AutoIconsPlugin extends Plugin {
 		);
 
 		this.registerEvent(this.app.vault.on("create", () => this.scheduleRefresh()));
-		this.registerEvent(
-			this.app.vault.on("rename", (file, oldPath) => {
-				this.moveCustomIcons(file.path, oldPath);
-				this.scheduleRefresh();
-			})
-		);
-		this.registerEvent(
-			this.app.vault.on("delete", (file) => {
-				this.removeCustomIcons(file.path);
-				this.scheduleRefresh();
-			})
-		);
+		this.registerEvent(this.app.vault.on("rename", () => this.scheduleRefresh()));
+		this.registerEvent(this.app.vault.on("delete", () => this.scheduleRefresh()));
 	}
 
 	onunload() {
@@ -152,9 +142,6 @@ export default class AutoIconsPlugin extends Plugin {
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<AutoIconsSettings> | null;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-		if (!this.settings.customIcons || typeof this.settings.customIcons !== "object") {
-			this.settings.customIcons = {};
-		}
 		if (!Array.isArray(this.settings.colorPalette)) {
 			this.settings.colorPalette = [];
 		}
@@ -174,49 +161,6 @@ export default class AutoIconsPlugin extends Plugin {
 			this.refreshTimeout = null;
 			this.applyAll();
 		}, 100);
-	}
-
-	// ---------------------------------------------------------------- explicit icons
-	
-	/** Re-keys custom icons when an item (or a folder with children) is renamed or moved. */
-	private moveCustomIcons(newPath: string, oldPath: string) {
-		const icons = this.settings.customIcons;
-		let changed = false;
-		if (icons[oldPath]) {
-			icons[newPath] = icons[oldPath];
-			delete icons[oldPath];
-			changed = true;
-		}
-		const prefix = oldPath + "/";
-		for (const key of Object.keys(icons)) {
-			if (key.startsWith(prefix)) {
-				icons[newPath + "/" + key.slice(prefix.length)] = icons[key];
-				delete icons[key];
-				changed = true;
-			}
-		}
-		if (changed) {
-			void this.saveData(this.settings);
-		}
-	}
-
-	private removeCustomIcons(path: string) {
-		const icons = this.settings.customIcons;
-		let changed = false;
-		if (icons[path]) {
-			delete icons[path];
-			changed = true;
-		}
-		const prefix = path + "/";
-		for (const key of Object.keys(icons)) {
-			if (key.startsWith(prefix)) {
-				delete icons[key];
-				changed = true;
-			}
-		}
-		if (changed) {
-			void this.saveData(this.settings);
-		}
 	}
 
 	// ---------------------------------------------------------------- rendering
@@ -392,10 +336,9 @@ export default class AutoIconsPlugin extends Plugin {
 	 * Resolves the icon and color for a file or folder.
 	 *
 	 * Without color inheritance the item gets one icon from the first source
-	 * that has one (per-item icon, frontmatter, first matching rule, default),
-	 * and a color only from that same source or colorful icons. With color
-	 * inheritance on, icon and color are resolved independently; see
-	 * resolveInherited().
+	 * that has one (frontmatter, first matching rule, default), and a color
+	 * only from that same source or colorful icons. With color inheritance on,
+	 * icon and color are resolved independently; see resolveInherited().
 	 */
 	resolveItem(path: string, isFolder: boolean): ResolvedIcon | null {
 		return this.settings.colorInheritanceEnabled
@@ -407,7 +350,7 @@ export default class AutoIconsPlugin extends Plugin {
 	 * Inheriting resolution. The icon and the color are looked up separately,
 	 * each taking the first level that sets it:
 	 *
-	 *   icon:  per-item icon > frontmatter icon > rules > default icons
+	 *   icon:  frontmatter icon > rules > default icons
 	 *   color: frontmatter color > rules > colorful icons > none (theme color)
 	 *
 	 * Among rules, the first matching rule that sets an icon provides the icon
@@ -421,10 +364,9 @@ export default class AutoIconsPlugin extends Plugin {
 				? this.app.metadataCache.getCache(path)?.frontmatter
 				: undefined;
 
-		// Icon: per-item icon, then frontmatter.
-		const custom = this.settings.customIcons[path];
-		let icon: string | null = custom ? this.resolveDisplayIcon(custom) : null;
-		if (!icon && frontmatter) {
+		// Icon: frontmatter, then rules.
+		let icon: string | null = null;
+		if (frontmatter) {
 			const value: unknown = frontmatter[this.settings.frontmatterProperty];
 			if (typeof value === "string") {
 				const trimmed = value.trim();
@@ -481,10 +423,10 @@ export default class AutoIconsPlugin extends Plugin {
 	}
 
 	/**
-	 * Original resolution, used while color inheritance is off. Priority: per-item
-	 * icon (context menu), frontmatter (notes), custom rules in order, then
-	 * file-type / default icons. The first source with an icon wins and brings
-	 * its own color (if it has one), falling back to the colorful-icons color.
+	 * Original resolution, used while color inheritance is off. Priority:
+	 * frontmatter (notes), custom rules in order, then file-type / default
+	 * icons. The first source with an icon wins and brings its own color (if it
+	 * has one), falling back to the colorful-icons color.
 	 * A frontmatter value of "none" suppresses the icon entirely. The frontmatter
 	 * color property is only honored together with a valid frontmatter icon, and
 	 * a rule needs an icon to match.
@@ -493,14 +435,6 @@ export default class AutoIconsPlugin extends Plugin {
 		const baseColor = this.settings.colorfulIconsEnabled
 			? colorForPath(path, this.settings.colorPalette)
 			: null;
-
-		const custom = this.settings.customIcons[path];
-		if (custom) {
-			const icon = this.resolveDisplayIcon(custom);
-			if (icon) {
-				return { icon, color: baseColor };
-			}
-		}
 
 		if (!isFolder && this.settings.frontmatterEnabled) {
 			const frontmatter = this.app.metadataCache.getCache(path)?.frontmatter;
